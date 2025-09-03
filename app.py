@@ -20,46 +20,17 @@ if not symbols:
     st.info("Links etwas auswählen, z. B. **S&P 500 (^GSPC)** oder **Bitcoin (BTC-USD)**.")
     st.stop()
 
-# --- Daten laden (gecacht)
-@st.cache_data(ttl=3600, show_spinner=False)
-def load(symbols, period):
-    out = {}
-    for s in symbols:
-        df = yf.download(s, period=period, interval="1d", auto_adjust=True, progress=False)
-        if not df.empty and "Close" in df.columns:
-            df = df.dropna(subset=["Close"])
-            if not df.empty:
-                df["Symbol"] = s
-                out[s] = df
-    return out
-
-frames = load(symbols, period_map[rng])
-if not frames:
-    st.error("Keine Daten geladen (evtl. Symbol/Zeitraum ändern).")
-    st.stop()
-
-# --- Helpers
+# --- Utils --------------------------------------------------------------------
 def to_scalar(x):
-    """Robust: extrahiere Einzelwert aus Series/ndarray/list, sonst unverändert zurück."""
-    try:
-        if isinstance(x, (pd.Series, list, tuple, np.ndarray)):
-            if len(x) == 0:
-                return np.nan
-            return to_scalar(x[-1])  # nimm den letzten Wert
-        if hasattr(x, "item"):
-            return x.item()
-    except Exception:
-        pass
-    return x
+    if isinstance(x, (pd.Series, list, tuple, np.ndarray)):
+        return np.nan if len(x) == 0 else to_scalar(x[-1])
+    return x.item() if hasattr(x, "item") else x
 
 def fmt(x, unit=""):
-    """Sichere Formatierung mit NaN/Inf-Handling."""
     x = to_scalar(x)
     try:
-        # None, NaN, +/-Inf
         if x is None or (isinstance(x, (float, int, np.floating, np.integer)) and not np.isfinite(x)):
             return "—"
-        # pandas NA
         if pd.isna(x):
             return "—"
         return f"{float(x):,.2f}{unit}"
@@ -67,21 +38,63 @@ def fmt(x, unit=""):
         return "—"
 
 def pct(a, b):
-    """Prozentänderung in %, NaN-sicher."""
     a, b = to_scalar(a), to_scalar(b)
-    if a is None or b is None:
-        return np.nan
     try:
-        if pd.isna(a) or pd.isna(b) or b == 0:
+        if a is None or b is None or pd.isna(a) or pd.isna(b) or float(b) == 0.0:
             return np.nan
-    except Exception:
-        pass
-    try:
         return (float(a) / float(b) - 1.0) * 100.0
     except Exception:
         return np.nan
 
-# --- KPI-Berechnung
+def extract_close(df: pd.DataFrame):
+    """Gib eine einspaltige Serie mit Schlusskursen zurück – robust gegen MultiIndex/Adj Close."""
+    if df is None or df.empty:
+        return None
+    # MultiIndex (kommt vor, je nach yfinance-Version/Symbol)
+    if isinstance(df.columns, pd.MultiIndex):
+        try:
+            s = df.xs("Close", axis=1, level=0)
+        except KeyError:
+            # Fallback: Adj Close
+            try:
+                s = df.xs("Adj Close", axis=1, level=0)
+            except KeyError:
+                s = None
+        if s is not None:
+            # Wenn DataFrame mit einer Spalte -> Serie daraus machen
+            if isinstance(s, pd.DataFrame):
+                if s.shape[1] >= 1:
+                    s = s.iloc[:, 0]
+            return s.dropna() if s is not None else None
+
+    # Normaler DataFrame
+    for name in ["Close", "Adj Close", "close", "adjclose"]:
+        if name in df.columns:
+            return df[name].dropna()
+
+    # letzter Fallback: nimm letzte Spalte
+    try:
+        return df.iloc[:, -1].dropna()
+    except Exception:
+        return None
+
+# --- Daten laden (gecacht) ----------------------------------------------------
+@st.cache_data(ttl=3600, show_spinner=True)
+def load(symbols, period):
+    out = {}
+    for s in symbols:
+        df = yf.download(s, period=period, interval="1d", auto_adjust=True, progress=False, group_by="column")
+        c = extract_close(df)
+        if c is not None and not c.empty:
+            out[s] = pd.DataFrame({"Close": c})
+    return out
+
+frames = load(symbols, period_map[rng])
+if not frames:
+    st.error("Keine Daten geladen (Symbol/Zeitraum wechseln und erneut versuchen).")
+    st.stop()
+
+# --- KPIs ---------------------------------------------------------------------
 def kpis(df: pd.DataFrame):
     n = len(df)
     if n < 2:
@@ -89,14 +102,13 @@ def kpis(df: pd.DataFrame):
     close = df["Close"]
     last = to_scalar(close.iloc[-1])
     prev = to_scalar(close.iloc[-2])
-    i7 = max(0, n - 7)
-    i30 = max(0, n - 30)
+    i7, i30 = max(0, n - 7), max(0, n - 30)
     d = pct(last, prev)
     w7 = pct(last, to_scalar(close.iloc[i7]))
     m30 = pct(last, to_scalar(close.iloc[i30]))
     return last, d, w7, m30
 
-# --- KPI-Kacheln
+# --- KPI-Kacheln --------------------------------------------------------------
 cols = st.columns(len(frames))
 for i, (sym, df) in enumerate(frames.items()):
     price, d, w, m = kpis(df)
@@ -110,7 +122,7 @@ for i, (sym, df) in enumerate(frames.items()):
 
 st.markdown("---")
 
-# --- Charts
+# --- Charts -------------------------------------------------------------------
 tab1, tab2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
 with tab1:
     for sym, df in frames.items():
