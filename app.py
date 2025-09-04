@@ -121,6 +121,26 @@ for i, (sym, df) in enumerate(frames.items()):
         st.caption(f"30 Tage: {fmt(m, '%')}")
 
 st.markdown("---")
+# --- CSV-Export der KPIs -----------------------------------------
+rows = []
+for sym, df in frames.items():
+    price, d, w, m = kpis(df)
+    rows.append({
+        "Symbol": sym,
+        "Preis": to_scalar(price),
+        "24h_%": to_scalar(d),
+        "7d_%": to_scalar(w),
+        "30d_%": to_scalar(m)
+    })
+
+kpi_df = pd.DataFrame(rows)
+
+st.download_button(
+    "⬇️ KPIs als CSV",
+    kpi_df.to_csv(index=False).encode("utf-8"),
+    "kpis.csv",
+    "text/csv"
+)
 
 # --- Charts -------------------------------------------------------------------
 tab1, tab2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
