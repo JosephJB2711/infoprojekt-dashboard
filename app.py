@@ -8,13 +8,39 @@ st.title("📈 Mini-Wirtschafts-Dashboard")
 st.caption("Täglich ~1h coden • Python • GitHub • Live-KPIs")
 
 # --- Sidebar-Auswahl
-symbols = st.sidebar.multiselect(
-    "Assets/Indizes wählen",
-    ["^GSPC", "^NDX", "BTC-USD", "ETH-USD", "EURUSD=X", "GC=F"],
-    default=["^GSPC", "BTC-USD"]
-)
+# --- Sidebar mit Presets & State ----------------------------------
 period_map = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "5Y": "5y"}
-rng = st.sidebar.selectbox("Zeitraum", list(period_map.keys()), index=1)
+
+# Initiale Defaults nur einmal setzen
+if "symbols" not in st.session_state:
+    st.session_state.symbols = ["^GSPC", "BTC-USD"]
+if "rng" not in st.session_state:
+    st.session_state.rng = "3M"
+
+with st.sidebar:
+    st.header("⚡ Presets")
+    cols = st.columns(3)
+    if cols[0].button("Krypto"):
+        st.session_state.symbols = ["BTC-USD", "ETH-USD"]
+    if cols[1].button("Aktien"):
+        st.session_state.symbols = ["^GSPC", "^NDX"]
+    if cols[2].button("Währungen"):
+        st.session_state.symbols = ["EURUSD=X", "GC=F"]
+
+    # Manuelle Auswahl bleibt möglich
+    st.write("— oder manuell wählen —")
+    st.session_state.symbols = st.multiselect(
+        "Assets/Indizes wählen",
+        ["^GSPC", "^NDX", "BTC-USD", "ETH-USD", "EURUSD=X", "GC=F"],
+        default=st.session_state.symbols
+    )
+
+    st.session_state.rng = st.selectbox("Zeitraum", list(period_map.keys()),
+                                        index=list(period_map.keys()).index(st.session_state.rng))
+
+symbols = st.session_state.symbols
+rng = st.session_state.rng
+
 
 if not symbols:
     st.info("Links etwas auswählen, z. B. **S&P 500 (^GSPC)** oder **Bitcoin (BTC-USD)**.")
