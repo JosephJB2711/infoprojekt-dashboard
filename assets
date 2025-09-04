@@ -1,8 +1,1 @@
-from pathlib import Path
 
-logo = Path(__file__).with_name("assets").joinpath("logo.png")
-if logo.exists():
-    st.image(str(logo), width=120)
-else:
-    # Fallback, falls Datei (noch) nicht da ist
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/256px-Bitcoin.svg.png", width=120)
