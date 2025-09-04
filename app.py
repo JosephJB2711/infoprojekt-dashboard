@@ -135,28 +135,33 @@ def kpis(df: pd.DataFrame):
     m30 = pct(last, to_scalar(close.iloc[i30]))
     return last, d, w7, m30
 
-# --- KPI-Kacheln --------------------------------------------------------------
+# --- KPI-Kacheln (mit BTC-Logo neben dem Titel) -------------------
 cols = st.columns(len(frames))
 for i, (sym, df) in enumerate(frames.items()):
     price, d, w, m = kpis(df)
-with cols[i]:
-    if sym == "BTC-USD":
-        # Zwei Spalten: links Logo, rechts Text
-        c_logo, c_text = st.columns([1, 4])
-        with c_logo:
-            st.image("bitcoin_PNG7.png", width=30)
-        with c_text:
+
+    with cols[i]:
+        # Überschrift: für BTC-USD Logo + Text nebeneinander
+        if sym == "BTC-USD":
+            head_l, head_r = st.columns([1, 5])
+            with head_l:
+                try:
+                    st.image("bitcoin_PNG7.png", width=28)  # Bild liegt im Repo-Root
+                except Exception:
+                    pass  # falls Bild fehlt, einfach ohne
+            with head_r:
+                st.subheader(sym)
+        else:
             st.subheader(sym)
-    else:
-        st.subheader(sym)
-        st.subheader(sym)
+
+        # KPIs
         st.metric("Preis", fmt(price))
         c1, c2 = st.columns(2)
-        c1.metric("24h", fmt(d, "%"))
+        c1.metric("24h",  fmt(d, "%"))
         c2.metric("7 Tage", fmt(w, "%"))
         st.caption(f"30 Tage: {fmt(m, '%')}")
 
-st.markdown("---")
+
 # --- CSV-Export der KPIs -----------------------------------------
 rows = []
 for sym, df in frames.items():
