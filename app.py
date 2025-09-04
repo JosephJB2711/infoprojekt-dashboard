@@ -2,9 +2,16 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import yfinance as yf
+from pathlib import Path
 
+logo = Path(__file__).with_name("assets").joinpath("logo.png")
+if logo.exists():
+    st.image(str(logo), width=120)
+else:
+    # Fallback, falls Datei (noch) nicht da ist
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/256px-Bitcoin.svg.png", width=120)
 st.set_page_config(page_title="Wirtschafts-Dashboard", page_icon="📈", layout="wide")
-st.image("assets/logo.png", width=120)
+st.image("assets/bitcoin_PNG7.png", width=120)
 st.title("📈 Mini-Wirtschafts-Dashboard")
 st.caption("Tipp: In den App-Settings → Theme den Dark Mode aktivieren")
 st.caption("Täglich ~1h coden • Python • GitHub • Live-KPIs")
