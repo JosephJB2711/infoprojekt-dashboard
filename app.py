@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 st.set_page_config(page_title="Wirtschafts-Dashboard", page_icon="📈", layout="wide")
-st.image("assets/bitcoin_PNG7.png", width=120)
+st.image("bitcoin_PNG7.png", width=120)
 st.title("📈 Mini-Wirtschafts-Dashboard")
 st.caption("Tipp: In den App-Settings → Theme den Dark Mode aktivieren")
 st.caption("Täglich ~1h coden • Python • GitHub • Live-KPIs")
