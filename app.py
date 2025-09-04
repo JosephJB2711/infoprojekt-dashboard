@@ -139,7 +139,7 @@ def kpis(df: pd.DataFrame):
 cols = st.columns(len(frames))
 for i, (sym, df) in enumerate(frames.items()):
     price, d, w, m = kpis(df)
-   with cols[i]:
+with cols[i]:
     if sym == "BTC-USD":
         # Zwei Spalten: links Logo, rechts Text
         c_logo, c_text = st.columns([1, 4])
