@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 st.set_page_config(page_title="Wirtschafts-Dashboard", page_icon="📈", layout="wide")
-st.image("bitcoin_PNG7.png", width=120)
+
 st.title("📈 Mini-Wirtschafts-Dashboard")
 st.caption("Tipp: In den App-Settings → Theme den Dark Mode aktivieren")
 st.caption("Täglich ~1h coden • Python • GitHub • Live-KPIs")
@@ -140,6 +140,8 @@ cols = st.columns(len(frames))
 for i, (sym, df) in enumerate(frames.items()):
     price, d, w, m = kpis(df)
     with cols[i]:
+        if sym == "BTC-USD":
+          st.image("bitcoin_PNG7.png", width=40)
         st.subheader(sym)
         st.metric("Preis", fmt(price))
         c1, c2 = st.columns(2)
