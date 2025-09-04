@@ -4,9 +4,7 @@ import numpy as np
 import yfinance as yf
 
 st.set_page_config(page_title="Wirtschafts-Dashboard", page_icon="📈", layout="wide")
-with st.sidebar:
-    st.image("assets/logo.png", width=120)  # oder der Wikimedia-Link
-
+st.image("assets/logo.png", width=120)
 st.title("📈 Mini-Wirtschafts-Dashboard")
 st.caption("Tipp: In den App-Settings → Theme den Dark Mode aktivieren")
 st.caption("Täglich ~1h coden • Python • GitHub • Live-KPIs")
