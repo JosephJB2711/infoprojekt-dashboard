@@ -197,14 +197,21 @@ st.download_button(
 )
 
 # --- Tabs ----------------------------------------------------------
+# --- Tabs ----------------------------------------------------------
 tab_kpi, tab_charts = st.tabs(["📊 KPIs", "📈 Charts"])
 
+# ---------- KPI-TAB ----------
 with tab_kpi:
+    # KPI-Grid
     cols = st.columns(len(frames))
+    rows = []  # für CSV
+
     for i, (sym, df) in enumerate(frames.items()):
         price, d, w, m = kpis(df)
+        vol = volatility(df)
+
         with cols[i]:
-            # BTC-Logo nebem Namen
+            # BTC-Logo neben Titel
             if sym == "BTC-USD":
                 head_l, head_r = st.columns([1, 5])
                 with head_l:
@@ -219,20 +226,32 @@ with tab_kpi:
 
             st.metric("Preis", fmt(price))
             c1, c2 = st.columns(2)
-            c1.metric("24h", fmt(d, "%"))
+            c1.metric("24h",  fmt(d, "%"))
             c2.metric("7 Tage", fmt(w, "%"))
             st.caption(f"30 Tage: {fmt(m, '%')}")
-            vol = volatility(df)
             st.caption(f"Volatilität (30T): {fmt(vol, '%')}")
 
-    # CSV-Download Button bleibt im KPI-Tab
+        # für CSV sammeln
+        rows.append({
+            "Symbol": sym,
+            "Preis": to_scalar(price),
+            "24h_%": to_scalar(d),
+            "7d_%": to_scalar(w),
+            "30d_%": to_scalar(m),
+            "Vol_30T_%": to_scalar(vol),
+        })
+
+    # CSV-Download (einmal, mit eindeutigem Key)
+    kpi_df = pd.DataFrame(rows)
     st.download_button(
-        "⬇️ KPIs als CSV",
-        kpi_df.to_csv(index=False).encode("utf-8"),
-        "kpis.csv",
-        "text/csv"
+        label="⬇️ KPIs als CSV",
+        data=kpi_df.to_csv(index=False).encode("utf-8"),
+        file_name="kpis.csv",
+        mime="text/csv",
+        key="kpi_csv_download_button"
     )
 
+# ---------- CHARTS-TAB ----------
 with tab_charts:
     sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
     with sub1:
@@ -247,17 +266,6 @@ with tab_charts:
         corr = merged.pct_change().corr().round(2)
         st.dataframe(corr, use_container_width=True)
 
-with tab1:
-    for sym, df in frames.items():
-        st.write(f"**{sym}**")
-        st.line_chart(df["Close"])
-
-with tab2:
-    merged = None
-    for sym, df in frames.items():
-        s = df["Close"].rename(sym)
-        merged = s if merged is None else merged.to_frame().join(s, how="outer")
-    corr = merged.pct_change().corr().round(2)
-    st.dataframe(corr, use_container_width=True)
-
+# Hinweis unten (optional)
 st.caption("ℹ️ Symbole: ^GSPC=S&P 500, ^NDX=Nasdaq 100, BTC-USD=Bitcoin, EURUSD=X=Euro/US-Dollar, GC=F=Gold")
+
