@@ -171,7 +171,8 @@ for i, (sym, df) in enumerate(frames.items()):
         c1.metric("24h",  fmt(d, "%"))
         c2.metric("7 Tage", fmt(w, "%"))
         st.caption(f"30 Tage: {fmt(m, '%')}")
-
+                vol = volatility(df)
+        st.caption(f"Volatilität (30T): {fmt(vol, '%')}")
 
 # --- CSV-Export der KPIs -----------------------------------------
 rows = []
