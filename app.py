@@ -265,8 +265,8 @@ with tab_kpi:
 # ---------- CHARTS-TAB ----------
 with tab_charts:
     # ---------- NEWS-TAB ----------
-with tab_news:
-    st.subheader("Aktuelle Nachrichten")
+    with tab_news:
+        st.subheader("Aktuelle Nachrichten")
 
     for sym in symbols:
         news_items = get_news(sym, limit=5)
