@@ -81,6 +81,7 @@ def color_pct_html(x, label):
     color = "green" if v >= 0 else "red"
     return f"<div><strong>{label}:</strong> <span style='color:{color}'>{v:+.2f}%</span></div>"
 
+
     x = to_scalar(x)
     try:
         if x is None or (isinstance(x, (float, int, np.floating, np.integer)) and not np.isfinite(x)):
