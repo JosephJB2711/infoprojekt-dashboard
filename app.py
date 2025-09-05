@@ -161,7 +161,8 @@ for i, (sym, df) in enumerate(frames.items()):
                 except Exception:
                     pass  # falls Bild fehlt, einfach ohne
             with head_r:
-                st.subheader(sym)
+                    st.markdown(f"### {sym}")
+
         else:
             st.subheader(sym)
 
