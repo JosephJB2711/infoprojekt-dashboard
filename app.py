@@ -70,18 +70,7 @@ def to_scalar(x):
     return x.item() if hasattr(x, "item") else x
 
 def fmt(x, unit=""):
-def color_pct_html(x, label):
-    """Gibt eine HTML-Zeile mit farbiger % Zahl zurück (grün/rot)"""
-    if x is None or (isinstance(x, float) and (np.isnan(x) or not np.isfinite(x))) or pd.isna(x):
-        return f"<div><strong>{label}:</strong> —</div>"
-    try:
-        v = float(x)
-    except Exception:
-        return f"<div><strong>{label}:</strong> —</div>"
-    color = "green" if v >= 0 else "red"
-    return f"<div><strong>{label}:</strong> <span style='color:{color}'>{v:+.2f}%</span></div>"
-
-
+    """Zahlen hübsch formatieren, NaN/Inf sicher abfangen."""
     x = to_scalar(x)
     try:
         if x is None or (isinstance(x, (float, int, np.floating, np.integer)) and not np.isfinite(x)):
@@ -92,7 +81,22 @@ def color_pct_html(x, label):
     except Exception:
         return "—"
 
+def color_pct_html(x, label):
+    """Gibt eine HTML-Zeile mit farbiger % Zahl zurück (grün/rot)."""
+    # Leere/ungültige Werte
+    if x is None:
+        return f"<div><strong>{label}:</strong> —</div>"
+    try:
+        v = float(to_scalar(x))
+        if not np.isfinite(v) or pd.isna(v):
+            return f"<div><strong>{label}:</strong> —</div>"
+    except Exception:
+        return f"<div><strong>{label}:</strong> —</div>"
+    color = "green" if v >= 0 else "red"
+    return f"<div><strong>{label}:</strong> <span style='color:{color}'>{v:+.2f}%</span></div>"
+
 def pct(a, b):
+    """Prozentänderung in % (NaN-sicher)."""
     a, b = to_scalar(a), to_scalar(b)
     try:
         if a is None or b is None or pd.isna(a) or pd.isna(b) or float(b) == 0.0:
@@ -105,6 +109,7 @@ def extract_close(df: pd.DataFrame):
     """Gib eine einspaltige Serie mit Schlusskursen zurück – robust gegen MultiIndex/Adj Close."""
     if df is None or df.empty:
         return None
+    # MultiIndex-Fälle
     if isinstance(df.columns, pd.MultiIndex):
         try:
             s = df.xs("Close", axis=1, level=0)
@@ -117,13 +122,16 @@ def extract_close(df: pd.DataFrame):
             if isinstance(s, pd.DataFrame) and s.shape[1] >= 1:
                 s = s.iloc[:, 0]
             return s.dropna() if s is not None else None
+    # Normale Spalten
     for name in ["Close", "Adj Close", "close", "adjclose"]:
         if name in df.columns:
             return df[name].dropna()
+    # Fallback: letzte Spalte
     try:
         return df.iloc[:, -1].dropna()
     except Exception:
         return None
+
 
 # -----------------------------------------------------------------------------
 # Daten laden (Cache)
