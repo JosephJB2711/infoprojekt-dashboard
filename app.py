@@ -134,8 +134,19 @@ def kpis(df: pd.DataFrame):
     w7 = pct(last, to_scalar(close.iloc[i7]))
     m30 = pct(last, to_scalar(close.iloc[i30]))
     return last, d, w7, m30
+def volatility(df: pd.DataFrame, days: int = 30):
+    """Berechnet die annualisierte Volatilität aus täglichen Renditen (Standardabweichung)."""
+    close = df["Close"].dropna()
+    if len(close) < 2:
+        return np.nan
+    returns = close.pct_change().dropna()
+    if len(returns) < days:
+        return np.nan
+    vol = returns[-days:].std() * np.sqrt(252) * 100  # annualisiert, in %
+    return vol
 
 # --- KPI-Kacheln (mit BTC-Logo neben dem Titel) -------------------
+
 cols = st.columns(len(frames))
 for i, (sym, df) in enumerate(frames.items()):
     price, d, w, m = kpis(df)
