@@ -328,6 +328,16 @@ with tab_charts:
         st.dataframe(corr, use_container_width=True)
 
 # ---------- NEWS-TAB ----------
+def get_news(symbol: str, limit: int = 5):
+    try:
+        t = yf.Ticker(symbol)
+        news = getattr(t, "news", None)
+        if not news:
+            return []
+        return news[:limit]
+    except Exception:
+        return []
+
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
     for sym in symbols:
