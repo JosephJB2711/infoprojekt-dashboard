@@ -203,13 +203,19 @@ with tab_kpi:
                     st.subheader(sym)
             else:
                 st.subheader(sym)
-
             st.metric("Preis", fmt(price))
+
             c1, c2 = st.columns(2)
-            c1.metric("24h", fmt(d, "%"))
-            c2.metric("7 Tage", fmt(w, "%"))
-            st.caption(f"30 Tage: {fmt(m, '%')}")
-            st.caption(f"Volatilität (30T): {fmt(vol, '%')}")
+            with c1:
+              st.markdown(color_pct_html(d, "24h"), unsafe_allow_html=True)
+            with c2:
+              st.markdown(color_pct_html(w, "7 Tage"), unsafe_allow_html=True)
+
+            st.markdown(color_pct_html(m, "30 Tage"), unsafe_allow_html=True)
+            st.markdown(color_pct_html(vol, "Volatilität (30T)"), unsafe_allow_html=True)
+
+
+
 
         rows.append({
             "Symbol": sym,
