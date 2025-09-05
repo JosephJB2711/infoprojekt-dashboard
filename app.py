@@ -48,6 +48,17 @@ if not symbols:
     st.stop()
 
 # --- Utils --------------------------------------------------------------------
+def get_news(symbol: str, limit: int = 5):
+    """Hole die neuesten Nachrichten-Headlines für ein Symbol (falls verfügbar)."""
+    try:
+        t = yf.Ticker(symbol)
+        if hasattr(t, "news"):
+            news = t.news[:limit]
+            return news
+    except Exception:
+        return []
+    return []
+
 def to_scalar(x):
     if isinstance(x, (pd.Series, list, tuple, np.ndarray)):
         return np.nan if len(x) == 0 else to_scalar(x[-1])
