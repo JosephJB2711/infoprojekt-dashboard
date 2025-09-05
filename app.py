@@ -303,14 +303,15 @@ with tab_kpi:
             "Vol_30T_%": to_scalar(vol),
         })
 
-    kpi_df = pd.DataFrame(rows)
-    st.download_button(
-        label="⬇️ KPIs als CSV",
-        data=kpi_df.to_csv(index=False).encode("utf-8"),
-        file_name="kpis.csv",
-        mime="text/csv",
-        key="kpi_csv_download_button"
-    )
+   key_suffix = f"{'-'.join(symbols)}-{rng}"
+st.download_button(
+    label="⬇️ KPIs als CSV",
+    data=kpi_df.to_csv(index=False).encode("utf-8"),
+    file_name="kpis.csv",
+    mime="text/csv",
+    key=f"kpi_csv_{key_suffix}"
+)
+
 
 # ---------- CHARTS-TAB ----------
 with tab_charts:
