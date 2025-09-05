@@ -303,7 +303,7 @@ with tab_kpi:
             "Vol_30T_%": to_scalar(vol),
         })
 
-   key_suffix = f"{'-'.join(symbols)}-{rng}"
+key_suffix = f"{'-'.join(symbols)}-{rng}"
 st.download_button(
     label="⬇️ KPIs als CSV",
     data=kpi_df.to_csv(index=False).encode("utf-8"),
