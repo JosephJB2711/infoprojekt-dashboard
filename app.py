@@ -208,8 +208,8 @@ st.download_button(
 )
 
 # --- Tabs ----------------------------------------------------------
-# --- Tabs ----------------------------------------------------------
-tab_kpi, tab_charts = st.tabs(["📊 KPIs", "📈 Charts"])
+tab_kpi, tab_charts, tab_news = st.tabs(["📊 KPIs", "📈 Charts", "📰 News"])
+
 
 # ---------- KPI-TAB ----------
 with tab_kpi:
