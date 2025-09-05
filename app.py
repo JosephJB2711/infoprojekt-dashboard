@@ -262,22 +262,58 @@ with tab_kpi:
         key="kpi_csv_download_button"
     )
 
+# --- Tabs ----------------------------------------------------------
+tab_kpi, tab_charts, tab_news = st.tabs(["📊 KPIs", "📈 Charts", "📰 News"])
+
+# ---------- KPI-TAB ----------
+with tab_kpi:
+    cols = st.columns(len(frames))
+    rows = []
+    for i, (sym, df) in enumerate(frames.items()):
+        price, d, w, m = kpis(df)
+        vol = volatility(df)
+
+        with cols[i]:
+            # BTC-Logo neben Titel
+            if sym == "BTC-USD":
+                head_l, head_r = st.columns([1, 5])
+                with head_l:
+                    try:
+                        st.image("bitcoin_PNG7.png", width=28)
+                    except Exception:
+                        pass
+                with head_r:
+                    st.subheader(sym)
+            else:
+                st.subheader(sym)
+
+            st.metric("Preis", fmt(price))
+            c1, c2 = st.columns(2)
+            c1.metric("24h",  fmt(d, "%"))
+            c2.metric("7 Tage", fmt(w, "%"))
+            st.caption(f"30 Tage: {fmt(m, '%')}")
+            st.caption(f"Volatilität (30T): {fmt(vol, '%')}")
+
+        rows.append({
+            "Symbol": sym,
+            "Preis": to_scalar(price),
+            "24h_%": to_scalar(d),
+            "7d_%": to_scalar(w),
+            "30d_%": to_scalar(m),
+            "Vol_30T_%": to_scalar(vol),
+        })
+
+    kpi_df = pd.DataFrame(rows)
+    st.download_button(
+        label="⬇️ KPIs als CSV",
+        data=kpi_df.to_csv(index=False).encode("utf-8"),
+        file_name="kpis.csv",
+        mime="text/csv",
+        key="kpi_csv_download_button"
+    )
+
 # ---------- CHARTS-TAB ----------
 with tab_charts:
-    # ---------- NEWS-TAB ----------
-    with tab_news:
-        st.subheader("Aktuelle Nachrichten")
-
-    for sym in symbols:
-        news_items = get_news(sym, limit=5)
-        if not news_items:
-            st.write(f"Keine News gefunden für {sym}")
-            continue
-
-        st.markdown(f"### {sym}")
-        for item in news_items:
-            st.markdown(f"- [{item['title']}]({item['link']})")
-
     sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
     with sub1:
         for sym, df in frames.items():
@@ -291,6 +327,21 @@ with tab_charts:
         corr = merged.pct_change().corr().round(2)
         st.dataframe(corr, use_container_width=True)
 
+# ---------- NEWS-TAB ----------
+with tab_news:
+    st.subheader("Aktuelle Nachrichten")
+    for sym in symbols:
+        news_items = get_news(sym, limit=5)
+        if not news_items:
+            st.write(f"Keine News gefunden für {sym}")
+            continue
+
+        st.markdown(f"### {sym}")
+        for item in news_items:
+            # Fallbacks, falls Keys fehlen
+            title = item.get("title", "Ohne Titel")
+            link = item.get("link", "#")
+            st.markdown(f"- [{title}]({link})")
+
 # Hinweis unten (optional)
 st.caption("ℹ️ Symbole: ^GSPC=S&P 500, ^NDX=Nasdaq 100, BTC-USD=Bitcoin, EURUSD=X=Euro/US-Dollar, GC=F=Gold")
-
