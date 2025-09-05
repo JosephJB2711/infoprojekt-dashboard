@@ -252,15 +252,7 @@ with tab_kpi:
             "Vol_30T_%": to_scalar(vol),
         })
 
-    # CSV-Download (einmal, mit eindeutigem Key)
-    kpi_df = pd.DataFrame(rows)
-    st.download_button(
-        label="⬇️ KPIs als CSV",
-        data=kpi_df.to_csv(index=False).encode("utf-8"),
-        file_name="kpis.csv",
-        mime="text/csv",
-        key="kpi_csv_download_button"
-    )
+    
 
 # --- Tabs ----------------------------------------------------------
 tab_kpi, tab_charts, tab_news = st.tabs(["📊 KPIs", "📈 Charts", "📰 News"])
