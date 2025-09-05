@@ -264,6 +264,20 @@ with tab_kpi:
 
 # ---------- CHARTS-TAB ----------
 with tab_charts:
+    # ---------- NEWS-TAB ----------
+with tab_news:
+    st.subheader("Aktuelle Nachrichten")
+
+    for sym in symbols:
+        news_items = get_news(sym, limit=5)
+        if not news_items:
+            st.write(f"Keine News gefunden für {sym}")
+            continue
+
+        st.markdown(f"### {sym}")
+        for item in news_items:
+            st.markdown(f"- [{item['title']}]({item['link']})")
+
     sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
     with sub1:
         for sym, df in frames.items():
