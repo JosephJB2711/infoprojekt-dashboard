@@ -70,6 +70,17 @@ def to_scalar(x):
     return x.item() if hasattr(x, "item") else x
 
 def fmt(x, unit=""):
+    def color_pct_html(x, label):
+    """Gibt eine HTML-Zeile mit farbiger % Zahl zurück (grün/rot)"""
+    if x is None or (isinstance(x, float) and (np.isnan(x) or not np.isfinite(x))) or pd.isna(x):
+        return f"<div><strong>{label}:</strong> —</div>"
+    try:
+        v = float(x)
+    except Exception:
+        return f"<div><strong>{label}:</strong> —</div>"
+    color = "green" if v >= 0 else "red"
+    return f"<div><strong>{label}:</strong> <span style='color:{color}'>{v:+.2f}%</span></div>"
+
     x = to_scalar(x)
     try:
         if x is None or (isinstance(x, (float, int, np.floating, np.integer)) and not np.isfinite(x)):
