@@ -196,8 +196,57 @@ st.download_button(
     "text/csv"
 )
 
-# --- Charts -------------------------------------------------------------------
-tab1, tab2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
+# --- Tabs ----------------------------------------------------------
+tab_kpi, tab_charts = st.tabs(["📊 KPIs", "📈 Charts"])
+
+with tab_kpi:
+    cols = st.columns(len(frames))
+    for i, (sym, df) in enumerate(frames.items()):
+        price, d, w, m = kpis(df)
+        with cols[i]:
+            # BTC-Logo nebem Namen
+            if sym == "BTC-USD":
+                head_l, head_r = st.columns([1, 5])
+                with head_l:
+                    try:
+                        st.image("bitcoin_PNG7.png", width=28)
+                    except Exception:
+                        pass
+                with head_r:
+                    st.subheader(sym)
+            else:
+                st.subheader(sym)
+
+            st.metric("Preis", fmt(price))
+            c1, c2 = st.columns(2)
+            c1.metric("24h", fmt(d, "%"))
+            c2.metric("7 Tage", fmt(w, "%"))
+            st.caption(f"30 Tage: {fmt(m, '%')}")
+            vol = volatility(df)
+            st.caption(f"Volatilität (30T): {fmt(vol, '%')}")
+
+    # CSV-Download Button bleibt im KPI-Tab
+    st.download_button(
+        "⬇️ KPIs als CSV",
+        kpi_df.to_csv(index=False).encode("utf-8"),
+        "kpis.csv",
+        "text/csv"
+    )
+
+with tab_charts:
+    sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
+    with sub1:
+        for sym, df in frames.items():
+            st.write(f"**{sym}**")
+            st.line_chart(df["Close"])
+    with sub2:
+        merged = None
+        for sym, df in frames.items():
+            s = df["Close"].rename(sym)
+            merged = s if merged is None else merged.to_frame().join(s, how="outer")
+        corr = merged.pct_change().corr().round(2)
+        st.dataframe(corr, use_container_width=True)
+
 with tab1:
     for sym, df in frames.items():
         st.write(f"**{sym}**")
