@@ -35,8 +35,8 @@ with st.sidebar:
     st.session_state.symbols = st.multiselect(
     "Assets/Indizes wählen",
     [
-        "GSPC",     # S&P 500 Index
-        "NDX",      # Nasdaq 100 Index
+        "^GSPC",     # S&P 500 Index
+        "^NDX",      # Nasdaq 100 Index
         "BTC-USD",   # Bitcoin
         "ETH-USD",   # Ethereum
         "EURUSD=X",  # Euro / US-Dollar
