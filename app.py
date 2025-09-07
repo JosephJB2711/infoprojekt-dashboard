@@ -265,12 +265,19 @@ with tab_charts:
             st.write(f"**{sym}**")
             st.line_chart(df["Close"])
     with sub2:
-        merged = None
-        for sym, df in frames.items():
-            s = df["Close"].rename(sym)
-            merged = s if merged is None else merged.to_frame().join(s, how="outer")
+    # Robuster Merge für unterschiedlich lange Indizes
+    series_list = []
+    for sym, df in frames.items():
+        if "Close" in df.columns and not df["Close"].empty:
+            series_list.append(df["Close"].rename(sym))
+
+    if series_list:
+        merged = pd.concat(series_list, axis=1)  # automatisch am Index ausrichten
         corr = merged.pct_change().corr().round(2)
         st.dataframe(corr, use_container_width=True)
+    else:
+        st.info("Keine Daten für Korrelation verfügbar.")
+
 
 # ---------- NEWS TAB ----------
 with tab_news:
