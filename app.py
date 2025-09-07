@@ -32,11 +32,23 @@ with st.sidebar:
         st.session_state.symbols = ["EURUSD=X", "GC=F"]
 
     st.write("— oder manuell wählen —")
-    st.session_state.symbols = st.multiselect(
-        "Assets/Indizes wählen",
-        ["^GSPC", "^NDX", "BTC-USD", "ETH-USD", "EURUSD=X", "GC=F"],
-        default=st.session_state.symbols
-    )
+   st.session_state.symbols = st.multiselect(
+    "Assets/Indizes wählen",
+    [
+        "GSPC",     # S&P 500 Index
+        "NDX",      # Nasdaq 100 Index
+        "BTC-USD",   # Bitcoin
+        "ETH-USD",   # Ethereum
+        "EURUSD=X",  # Euro / US-Dollar
+        "GC=F",      # Gold
+        "CL=F",      # Öl (WTI Crude)
+        "AAPL",      # Apple
+        "TSLA",      # Tesla
+        "NVDA",      # Nvidia
+    ],
+    default=st.session_state.symbols
+)
+
     st.session_state.rng = st.selectbox(
         "Zeitraum",
         list(period_map.keys()),
