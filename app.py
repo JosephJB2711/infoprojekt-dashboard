@@ -32,7 +32,7 @@ with st.sidebar:
         st.session_state.symbols = ["EURUSD=X", "GC=F"]
 
     st.write("— oder manuell wählen —")
-   st.session_state.symbols = st.multiselect(
+    st.session_state.symbols = st.multiselect(
     "Assets/Indizes wählen",
     [
         "GSPC",     # S&P 500 Index
