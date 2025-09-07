@@ -29,7 +29,8 @@ with st.sidebar:
     if row1_c2.button("📈 Indizes"):
       st.session_state.symbols = ["^GSPC", "^NDX"]
     if row1_c3.button("💱 Währungen"):
-      st.session_state.symbols = ["EURUSD=X"]
+      st.session_state.symbols = ["EURUSD=X", "GBPUSD=X", "JPY=X", "CHFUSD=X"]
+
 
     row2_c1, row2_c2 = st.columns(2)
     if row2_c1.button("💻 Tech"):
@@ -47,6 +48,9 @@ with st.sidebar:
         "BTC-USD",   # Bitcoin
         "ETH-USD",   # Ethereum
         "EURUSD=X",  # Euro / US-Dollar
+        "GBPUSD=X", 
+        "JPY=X", 
+        "CHFUSD=X",
         "GC=F",      # Gold
         "CL=F",      # Öl (WTI Crude)
         "AAPL",      # Apple
