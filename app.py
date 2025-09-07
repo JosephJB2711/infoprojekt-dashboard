@@ -23,13 +23,20 @@ if "rng" not in st.session_state:
 
 with st.sidebar:
     st.header("⚡ Presets")
-    c1, c2, c3 = st.columns(3)
-    if c1.button("🪙 Krypto"):
-        st.session_state.symbols = ["BTC-USD", "ETH-USD"]
-    if c2.button("📈 Aktien"):
-        st.session_state.symbols = ["^GSPC", "^NDX"]
-    if c3.button("💱 Währungen"):
-        st.session_state.symbols = ["EURUSD=X", "GC=F"]
+    row1_c1, row1_c2, row1_c3 = st.columns(3)
+    if row1_c1.button("🪙 Krypto"):
+      st.session_state.symbols = ["BTC-USD", "ETH-USD"]
+    if row1_c2.button("📈 Indizes"):
+      st.session_state.symbols = ["^GSPC", "^NDX"]
+    if row1_c3.button("💱 Währungen"):
+      st.session_state.symbols = ["EURUSD=X"]
+
+    row2_c1, row2_c2 = st.columns(2)
+    if row2_c1.button("💻 Tech"):
+      st.session_state.symbols = ["AAPL", "TSLA", "NVDA"]
+    if row2_c2.button("⛽ Rohstoffe"):
+      st.session_state.symbols = ["GC=F", "CL=F"]
+
 
     st.write("— oder manuell wählen —")
     st.session_state.symbols = st.multiselect(
