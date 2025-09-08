@@ -173,6 +173,8 @@ frames = load(symbols, period_map[rng])
 if not frames:
     st.error("Keine Daten geladen (Symbol/Zeitraum wechseln und erneut versuchen).")
     st.stop()
+st.write("Geladene Symbole:", list(frames.keys()))
+
 
 # -----------------------------------------------------------------------------
 # KPIs & Volatilität
