@@ -86,6 +86,23 @@ def get_news(symbol: str, limit: int = 5):
         return news[:limit]
     except Exception:
         return []
+def add_mas(df: pd.DataFrame):
+    d = df.copy()
+    d["MA20"] = d["Close"].rolling(20).mean()
+    d["MA50"] = d["Close"].rolling(50).mean()
+    return d
+
+def fig_with_mas(df: pd.DataFrame, sym: str, show_ma20: bool, show_ma50: bool):
+    d = add_mas(df)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=d.index, y=d["Close"], mode="lines", name=f"{sym} Close"))
+    if show_ma20 and d["MA20"].notna().any():
+        fig.add_trace(go.Scatter(x=d.index, y=d["MA20"], mode="lines", name="MA20"))
+    if show_ma50 and d["MA50"].notna().any():
+        fig.add_trace(go.Scatter(x=d.index, y=d["MA50"], mode="lines", name="MA50"))
+    fig.update_layout(margin=dict(l=0,r=0,t=30,b=0), legend=dict(orientation="h"))
+    return fig
+
 
 def to_scalar(x):
     if isinstance(x, (pd.Series, list, tuple, np.ndarray)):
