@@ -245,7 +245,9 @@ with tab_kpi:
                     st.subheader(sym)
             else:
                 st.subheader(sym)
-            st.metric("Preis", fmt(price))
+            delta = fmt(d, "%")  # d ist dein 24h %
+            st.metric("Preis", fmt(price), delta=delta)
+
 
             c1, c2 = st.columns(2)
             with c1:
