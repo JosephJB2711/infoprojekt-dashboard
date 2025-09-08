@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import yfinance as yf
-
+import plotly.graph_objects as go
 # -----------------------------------------------------------------------------
 # Grundkonfiguration
 # -----------------------------------------------------------------------------
@@ -173,7 +173,7 @@ frames = load(symbols, period_map[rng])
 if not frames:
     st.error("Keine Daten geladen (Symbol/Zeitraum wechseln und erneut versuchen).")
     st.stop()
-st.write("Geladene Symbole:", list(frames.keys()))
+
 
 
 # -----------------------------------------------------------------------------
