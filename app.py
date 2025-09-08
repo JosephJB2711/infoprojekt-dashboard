@@ -287,9 +287,11 @@ with tab_charts:
     show_ma50 = st.checkbox("MA50 anzeigen", value=False)
 
     with sub1:
-        for sym, df in frames.items():
-            st.write(f"**{sym}**")
-            st.line_chart(df["Close"])
+    for sym, df in frames.items():
+        st.write(f"**{sym}**")
+        fig = fig_with_mas(df, sym, show_ma20, show_ma50)
+        st.plotly_chart(fig, use_container_width=True)
+
     with sub2:
     # Robuster Merge für unterschiedlich lange Indizes
       series_list = []
