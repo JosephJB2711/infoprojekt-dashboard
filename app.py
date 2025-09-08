@@ -283,6 +283,9 @@ with tab_kpi:
 # ---------- CHARTS TAB ----------
 with tab_charts:
     sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
+    show_ma20 = st.checkbox("MA20 anzeigen", value=True)
+    show_ma50 = st.checkbox("MA50 anzeigen", value=False)
+
     with sub1:
         for sym, df in frames.items():
             st.write(f"**{sym}**")
