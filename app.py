@@ -230,6 +230,12 @@ def volatility(df: pd.DataFrame, days: int = 30):
 tab_kpi, tab_charts, tab_news = st.tabs(["📊 KPIs", "📈 Charts", "📰 News"])
 
 # ---------- KPI TAB ----------
+for sym, df in frames.items():
+    if not has_close_data(df):
+        st.warning(f"{sym}: Keine Daten verfügbar.")
+        continue
+    # normale KPI-Berechnung
+
 with tab_kpi:
     cols = st.columns(len(frames))
     rows = []
