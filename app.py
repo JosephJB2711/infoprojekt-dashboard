@@ -319,11 +319,11 @@ with tab_charts:
         if "Close" in df.columns and not df["Close"].dropna().empty:
             series_list.append(df["Close"].rename(sym))
 
-    if series_list:
+      if series_list:
         merged = pd.concat(series_list, axis=1)  # robust, egal ob 2 oder 10 Symbole
         corr = merged.pct_change().corr().round(2)
         st.dataframe(corr, use_container_width=True)
-    else:
+      else:
         st.info("Keine Daten für Korrelation verfügbar.")
 
       if series_list:
