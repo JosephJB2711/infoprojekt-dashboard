@@ -295,6 +295,13 @@ with tab_kpi:
         )
 
 # ---------- CHARTS TAB ----------
+for sym, df in frames.items():
+    if not has_close_data(df):
+        st.info(f"{sym}: Keine Daten für Verlauf.")
+        continue
+    st.write(f"**{sym}**")
+    # Chart rendern
+
 with tab_charts:
     sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
     show_ma20 = st.checkbox("MA20 anzeigen", value=True)
