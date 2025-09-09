@@ -314,11 +314,17 @@ with tab_charts:
         st.plotly_chart(fig, use_container_width=True)
 
     with sub2:
-    # Robuster Merge für unterschiedlich lange Indizes
-      series_list = []
-      for sym, df in frames.items():
-        if "Close" in df.columns and not df["Close"].empty:
+    series_list = []
+    for sym, df in frames.items():
+        if "Close" in df.columns and not df["Close"].dropna().empty:
             series_list.append(df["Close"].rename(sym))
+
+    if series_list:
+        merged = pd.concat(series_list, axis=1)  # robust, egal ob 2 oder 10 Symbole
+        corr = merged.pct_change().corr().round(2)
+        st.dataframe(corr, use_container_width=True)
+    else:
+        st.info("Keine Daten für Korrelation verfügbar.")
 
       if series_list:
         merged = pd.concat(series_list, axis=1)  # automatisch am Index ausrichten
