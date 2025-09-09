@@ -314,8 +314,8 @@ with tab_charts:
         st.plotly_chart(fig, use_container_width=True)
 
     with sub2:
-    series_list = []
-    for sym, df in frames.items():
+      series_list = []
+      for sym, df in frames.items():
         if "Close" in df.columns and not df["Close"].dropna().empty:
             series_list.append(df["Close"].rename(sym))
 
