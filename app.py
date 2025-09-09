@@ -76,6 +76,12 @@ if not symbols:
 # -----------------------------------------------------------------------------
 # Utils
 # -----------------------------------------------------------------------------
+def has_close_data(df: pd.DataFrame) -> bool:
+    try:
+        return ("Close" in df.columns) and (not df["Close"].dropna().empty)
+    except Exception:
+        return False
+
 def get_news(symbol: str, limit: int = 5):
     """Hole die neuesten Nachrichten-Headlines für ein Symbol (falls verfügbar)."""
     try:
