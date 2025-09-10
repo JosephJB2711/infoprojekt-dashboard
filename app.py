@@ -256,6 +256,7 @@ for sym, df in frames.items():
     # normale KPI-Berechnung
 
 with tab_kpi:
+    st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
     cols = st.columns(len(frames))
     rows = []
 
