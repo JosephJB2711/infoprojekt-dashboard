@@ -6,10 +6,11 @@ import plotly.graph_objects as go
 # -----------------------------------------------------------------------------
 # Grundkonfiguration
 # -----------------------------------------------------------------------------
-st.set_page_config(page_title="Wirtschafts-Dashboard", page_icon="📈", layout="wide")
-st.title("📈 Mini-Wirtschafts-Dashboard")
-st.caption("Tipp: In den App-Settings → Theme den Dark Mode aktivieren")
-st.caption("Täglich ~1h coden • Python • GitHub • Live-KPIs")
+with st.container():
+    st.markdown("### 📈 Mini-Wirtschafts-Dashboard")
+    st.markdown("Täglich ~1h coden • Python • GitHub • Live-KPIs")
+    st.caption("💡 Tipp: In den App-Settings → Theme den Dark Mode aktivieren")
+st.markdown("<hr style='opacity:0.3'>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # Sidebar (Presets + Zeitraum) mit Session State
