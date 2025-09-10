@@ -373,4 +373,6 @@ with tab_news:
 # Hinweis
 # -----------------------------------------------------------------------------
 st.caption("ℹ️ Symbole: ^GSPC=S&P 500, ^NDX=Nasdaq 100, BTC-USD=Bitcoin, EURUSD=X=Euro/US-Dollar, GC=F=Gold")
+st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
+st.caption("📊 Datenquelle: Yahoo Finance • Build mit Streamlit 🚀")
 
