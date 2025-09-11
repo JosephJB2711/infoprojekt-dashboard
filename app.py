@@ -271,17 +271,18 @@ def volatility(df: pd.DataFrame, days: int = 30):
 # -----------------------------------------------------------------------------
 # TABS: KPIs / CHARTS / NEWS
 # -----------------------------------------------------------------------------
+# --- Tabs ----------------------------------------------------------
 tab_kpi, tab_charts, tab_news = st.tabs(["📊 KPIs", "📈 Charts", "📰 News"])
 
 # ---------- KPI TAB ----------
-# ---------- KPI TAB (bereinigt, ohne extra Helper) ----------
 with tab_kpi:
+    # feiner Trenner oben
     st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
 
     items = list(frames.items())
     rows_for_csv = []
 
-    # immer 3 Karten pro Reihe
+    # immer 3 Karten pro Reihe (stabiles Grid)
     chunk = 3
     for start in range(0, len(items), chunk):
         cols = st.columns(chunk)
@@ -309,7 +310,7 @@ with tab_kpi:
                 else:
                     st.subheader(sym)
 
-                # Preis + Delta
+                # Preis + Delta (24h)
                 st.metric("Preis", fmt(price), delta=fmt(d, "%"))
 
                 # Farbige Prozentwerte
@@ -343,8 +344,36 @@ with tab_kpi:
             key="kpi_csv_download_button"
         )
 
-    # feiner Trenner unter dem KPI-Tab
+    # feiner Trenner unten
     st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
+
+# ---------- CHARTS TAB ----------
+with tab_charts:
+    # zwei Untertabs: Verlauf + Korrelation
+    sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
+
+    with sub1:
+        for sym, df in frames.items():
+            if not has_close_data(df):
+                st.info(f"{sym}: Keine Daten für Verlauf.")
+                continue
+            st.write(f"**{sym}**")
+            # einfache, robuste Chart-Variante; wenn du Plotly nutzt, kannst du hier ersetzen
+            st.line_chart(df["Close"])
+
+    with sub2:
+        # robuste Korrelation via concat
+        series_list = []
+        for sym, df in frames.items():
+            if has_close_data(df):
+                series_list.append(df["Close"].rename(sym))
+
+        if series_list:
+            merged = pd.concat(series_list, axis=1)  # Index wird automatisch ausgerichtet
+            corr = merged.pct_change().corr().round(2)
+            st.dataframe(corr, use_container_width=True)
+        else:
+            st.info("Keine Daten für Korrelation verfügbar.")
 
 # ---------- NEWS TAB ----------
 with tab_news:
@@ -352,18 +381,15 @@ with tab_news:
     for sym in symbols:
         items = get_news(sym, limit=5)
         if not items:
-            st.write(f"Keine News gefunden für {sym}")
+            st.write(f"Keine News für {sym}.")
             continue
         st.markdown(f"### {sym}")
         for item in items:
             title = item.get("title", "Ohne Titel")
-            link = item.get("link", "#")
+            link  = item.get("link", "#")
             st.markdown(f"- [{title}]({link})")
 
-# -----------------------------------------------------------------------------
-# Hinweis
-# -----------------------------------------------------------------------------
+# Hinweis unten (optional)
 st.caption("ℹ️ Symbole: ^GSPC=S&P 500, ^NDX=Nasdaq 100, BTC-USD=Bitcoin, EURUSD=X=Euro/US-Dollar, GC=F=Gold")
 st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
 st.caption("📊 Datenquelle: Yahoo Finance • Build mit Streamlit 🚀")
-
