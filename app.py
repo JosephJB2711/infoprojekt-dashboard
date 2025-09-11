@@ -77,6 +77,24 @@ if not symbols:
 # -----------------------------------------------------------------------------
 # Utils
 # -----------------------------------------------------------------------------
+def render_kpi_grid(frames: dict):
+    items = list(frames.items())
+    chunk = 3
+    for start in range(0, len(items), chunk):
+        cols = st.columns(chunk)
+        for col, (sym, df) in zip(cols, items[start:start+chunk]):
+            with col:
+                if not has_close_data(df):
+                    st.warning(f"{sym}: Keine Daten.")
+                    continue
+                price, d, w, m = kpis(df)
+                vol = volatility(df)
+                st.subheader(sym)
+                st.metric("Preis", fmt(price), delta=fmt(d, "%"))
+                st.markdown(color_pct_html(w, "7 Tage"), unsafe_allow_html=True)
+                st.markdown(color_pct_html(m, "30 Tage"), unsafe_allow_html=True)
+                st.markdown(color_pct_html(vol, "Volatilität (30T)"), unsafe_allow_html=True)
+
 def has_close_data(df: pd.DataFrame) -> bool:
     try:
         return ("Close" in df.columns) and (not df["Close"].dropna().empty)
