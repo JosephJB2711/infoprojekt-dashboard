@@ -343,7 +343,7 @@ def volatility(df: pd.DataFrame, days: int = 30):
 # --- Tabs ----------------------------------------------------------
 tab_kpi, tab_charts, tab_news = st.tabs(["📊 KPIs", "📈 Charts", "📰 News"])
 
-# ---------- KPI TAB ----------
+
 # ---------- KPI TAB ----------
 with tab_kpi:
     # feiner Trenner oben
@@ -449,36 +449,6 @@ with tab_charts:
         else:
             st.info("Keine Daten für Korrelation verfügbar.")
 
-
-# ---------- CHARTS TAB ----------
-with tab_charts:
-    # zwei Untertabs: Verlauf + Korrelation
-    sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
-
-    with sub1:
-        for sym, df in frames.items():
-            if not has_close_data(df):
-                st.info(f"{sym}: Keine Daten für Verlauf.")
-                continue
-            st.write(f"**{sym}**")
-            # einfache, robuste Chart-Variante; wenn du Plotly nutzt, kannst du hier ersetzen
-            st.line_chart(df["Close"])
-
-    with sub2:
-        # robuste Korrelation via concat
-        series_list = []
-        for sym, df in frames.items():
-            if has_close_data(df):
-                series_list.append(df["Close"].rename(sym))
-
-        if series_list:
-            merged = pd.concat(series_list, axis=1)  # Index wird automatisch ausgerichtet
-            corr = merged.pct_change().corr().round(2)
-            st.dataframe(corr, use_container_width=True)
-        else:
-            st.info("Keine Daten für Korrelation verfügbar.")
-
-# ---------- NEWS TAB ----------
 # ---------- NEWS TAB ----------
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
