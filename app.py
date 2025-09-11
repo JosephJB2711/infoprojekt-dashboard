@@ -347,18 +347,21 @@ with tab_charts:
             st.info("Keine Daten für Korrelation verfügbar.")
 
 # ---------- NEWS TAB ----------
+# ---------- NEWS TAB ----------
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
     for sym in symbols:
         items = get_news(sym, limit=5)
-        if not items:
-            st.write(f"Keine News für {sym}.")
-            continue
         st.markdown(f"### {sym}")
+        if not items:
+            st.write("Keine News gefunden.")
+            continue
         for item in items:
             title = item.get("title", "Ohne Titel")
             link  = item.get("link", "#")
-            st.markdown(f"- [{title}]({link})")
+            publisher = item.get("publisher", "")
+            st.markdown(f"- [{title}]({link})  <span style='opacity:.6'>({publisher})</span>", unsafe_allow_html=True)
+
 
 # Hinweis unten (optional)
 st.caption("ℹ️ Symbole: ^GSPC=S&P 500, ^NDX=Nasdaq 100, BTC-USD=Bitcoin, EURUSD=X=Euro/US-Dollar, GC=F=Gold")
