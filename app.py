@@ -77,6 +77,12 @@ if not symbols:
 # -----------------------------------------------------------------------------
 # Utils
 # -----------------------------------------------------------------------------
+def has_close_data(df: pd.DataFrame) -> bool:
+    try:
+        return ("Close" in df.columns) and (not df["Close"].dropna().empty)
+    except Exception:
+        return False
+
 def add_mas(df: pd.DataFrame):
     d = df.copy()
     d["MA20"] = d["Close"].rolling(20).mean()
