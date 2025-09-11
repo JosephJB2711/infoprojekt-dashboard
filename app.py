@@ -285,77 +285,38 @@ def volatility(df: pd.DataFrame, days: int = 30):
 tab_kpi, tab_charts, tab_news = st.tabs(["📊 KPIs", "📈 Charts", "📰 News"])
 
 # ---------- KPI TAB ----------
-with tab_kpi:
-    # feiner Trenner oben
-    st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
+# ---------- CHARTS TAB ----------
+with tab_charts:
+    # Optionen oberhalb der Unter-Tabs
+    show_ma20  = st.checkbox("MA20 anzeigen", value=True,  key="opt_ma20")
+    show_ma50  = st.checkbox("MA50 anzeigen", value=False, key="opt_ma50")
+    normalize  = st.checkbox("Verlauf auf 100 normieren", value=False, key="opt_norm")
 
-    items = list(frames.items())
-    rows_for_csv = []
+    sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
 
-    # immer 3 Karten pro Reihe (stabiles Grid)
-    chunk = 3
-    for start in range(0, len(items), chunk):
-        cols = st.columns(chunk)
-        for col, (sym, df) in zip(cols, items[start:start+chunk]):
-            with col:
-                # Daten-Check
-                if not has_close_data(df):
-                    st.warning(f"{sym}: Keine Daten verfügbar.")
-                    continue
+    # --- Verlauf (Plotly, MAs, Normalisierung, Slider) ---
+    with sub1:
+        for sym, df in frames.items():
+            if not has_close_data(df):
+                st.info(f"{sym}: Keine Daten für Verlauf.")
+                continue
+            st.markdown(f"**{sym}**")
+            fig = fig_with_mas(df, sym, show_ma20, show_ma50, normalize)
+            st.plotly_chart(fig, use_container_width=True)
 
-                # KPIs berechnen
-                price, d, w, m = kpis(df)
-                vol = volatility(df)
+    # --- Korrelation (robust via concat) ---
+    with sub2:
+        series_list = []
+        for sym, df in frames.items():
+            if has_close_data(df):
+                series_list.append(df["Close"].rename(sym))
+        if series_list:
+            merged = pd.concat(series_list, axis=1)
+            corr = merged.pct_change().corr().round(2)
+            st.dataframe(corr, use_container_width=True)
+        else:
+            st.info("Keine Daten für Korrelation verfügbar.")
 
-                # Titel mit BTC-Logo
-                if sym == "BTC-USD":
-                    head_l, head_r = st.columns([1, 5])
-                    with head_l:
-                        try:
-                            st.image("bitcoin_PNG7.png", width=28)
-                        except Exception:
-                            pass
-                    with head_r:
-                        st.subheader(sym)
-                else:
-                    st.subheader(sym)
-
-                # Preis + Delta (24h)
-                st.metric("Preis", fmt(price), delta=fmt(d, "%"))
-
-                # Farbige Prozentwerte
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.markdown(color_pct_html(d, "24h"), unsafe_allow_html=True)
-                with c2:
-                    st.markdown(color_pct_html(w, "7 Tage"), unsafe_allow_html=True)
-                st.markdown(color_pct_html(m, "30 Tage"), unsafe_allow_html=True)
-                st.markdown(color_pct_html(vol, "Volatilität (30T)"), unsafe_allow_html=True)
-
-                # Für CSV sammeln
-                rows_for_csv.append({
-                    "Symbol": sym,
-                    "Preis": to_scalar(price),
-                    "24h_%": to_scalar(d),
-                    "7d_%": to_scalar(w),
-                    "30d_%": to_scalar(m),
-                    "Vol_30T_%": to_scalar(vol),
-                })
-
-    # CSV-Download (einmal, rechts ausgerichtet)
-    kpi_df = pd.DataFrame(rows_for_csv)
-    btn_l, btn_r = st.columns([3, 1])
-    with btn_r:
-        st.download_button(
-            label="⬇️ KPIs als CSV",
-            data=kpi_df.to_csv(index=False).encode("utf-8"),
-            file_name="kpis.csv",
-            mime="text/csv",
-            key="kpi_csv_download_button"
-        )
-
-    # feiner Trenner unten
-    st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
 
 # ---------- CHARTS TAB ----------
 with tab_charts:
