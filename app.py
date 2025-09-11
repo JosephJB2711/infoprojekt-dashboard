@@ -336,8 +336,8 @@ with tab_charts:
 
     with sub1:
       for sym, df in frames.items():
-          if not has_close_data(df):
-            continue
+        if not has_close_data(df):
+          continue
 
         st.write(f"**{sym}**")
         fig = fig_with_mas(df, sym, show_ma20, show_ma50)
