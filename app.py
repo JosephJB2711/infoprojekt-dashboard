@@ -77,83 +77,9 @@ if not symbols:
 # -----------------------------------------------------------------------------
 # Utils
 # -----------------------------------------------------------------------------
-def render_kpi_grid(frames: dict):
-    items = list(frames.items())
-    chunk = 3
-    for start in range(0, len(items), chunk):
-        cols = st.columns(chunk)
-        for col, (sym, df) in zip(cols, items[start:start+chunk]):
-            with col:
-                if not has_close_data(df):
-                    st.warning(f"{sym}: Keine Daten.")
-                    continue
-                price, d, w, m = kpis(df)
-                vol = volatility(df)
-                st.subheader(sym)
-                st.metric("Preis", fmt(price), delta=fmt(d, "%"))
-                st.markdown(color_pct_html(w, "7 Tage"), unsafe_allow_html=True)
-                st.markdown(color_pct_html(m, "30 Tage"), unsafe_allow_html=True)
-                st.markdown(color_pct_html(vol, "Volatilität (30T)"), unsafe_allow_html=True)
-
-def has_close_data(df: pd.DataFrame) -> bool:
-    try:
-        return ("Close" in df.columns) and (not df["Close"].dropna().empty)
-    except Exception:
-        return False
-
-def add_mas(df: pd.DataFrame):
-    d = df.copy()
-    d["MA20"] = d["Close"].rolling(20).mean()
-    d["MA50"] = d["Close"].rolling(50).mean()
-    return d
-
-def fig_with_mas(df: pd.DataFrame, sym: str, show_ma20: bool, show_ma50: bool):
-    d = add_mas(df)
-    fig = go.Figure()
-    # Close
-    fig.add_trace(go.Scatter(x=d.index, y=d["Close"], mode="lines", name=f"{sym} Close"))
-    # MAs
-    if show_ma20 and d["MA20"].notna().any():
-        fig.add_trace(go.Scatter(x=d.index, y=d["MA20"], mode="lines", name="MA20"))
-    if show_ma50 and d["MA50"].notna().any():
-        fig.add_trace(go.Scatter(x=d.index, y=d["MA50"], mode="lines", name="MA50"))
-    fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), legend=dict(orientation="h"))
-    return fig
-
-def has_close_data(df: pd.DataFrame) -> bool:
-    try:
-        return ("Close" in df.columns) and (not df["Close"].dropna().empty)
-    except Exception:
-        return False
-
-def get_news(symbol: str, limit: int = 5):
-    """Hole die neuesten Nachrichten-Headlines für ein Symbol (falls verfügbar)."""
-    try:
-        t = yf.Ticker(symbol)
-        news = getattr(t, "news", None)
-        if not news:
-            return []
-        return news[:limit]
-    except Exception:
-        return []
-def add_mas(df: pd.DataFrame):
-    d = df.copy()
-    d["MA20"] = d["Close"].rolling(20).mean()
-    d["MA50"] = d["Close"].rolling(50).mean()
-    return d
-
-def fig_with_mas(df: pd.DataFrame, sym: str, show_ma20: bool, show_ma50: bool):
-    d = add_mas(df)
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=d.index, y=d["Close"], mode="lines", name=f"{sym} Close"))
-    if show_ma20 and d["MA20"].notna().any():
-        fig.add_trace(go.Scatter(x=d.index, y=d["MA20"], mode="lines", name="MA20"))
-    if show_ma50 and d["MA50"].notna().any():
-        fig.add_trace(go.Scatter(x=d.index, y=d["MA50"], mode="lines", name="MA50"))
-    fig.update_layout(margin=dict(l=0,r=0,t=30,b=0), legend=dict(orientation="h"))
-    return fig
-
-
+# -----------------------------------------------------------------------------
+# Utils
+# -----------------------------------------------------------------------------
 def to_scalar(x):
     if isinstance(x, (pd.Series, list, tuple, np.ndarray)):
         return np.nan if len(x) == 0 else to_scalar(x[-1])
@@ -173,13 +99,10 @@ def fmt(x, unit=""):
 
 def color_pct_html(x, label):
     """Gibt eine HTML-Zeile mit farbiger % Zahl zurück (grün/rot)."""
-    # Leere/ungültige Werte
-    if x is None:
-        return f"<div><strong>{label}:</strong> —</div>"
     try:
         v = float(to_scalar(x))
         if not np.isfinite(v) or pd.isna(v):
-            return f"<div><strong>{label}:</strong> —</div>"
+            raise ValueError
     except Exception:
         return f"<div><strong>{label}:</strong> —</div>"
     color = "green" if v >= 0 else "red"
@@ -221,6 +144,93 @@ def extract_close(df: pd.DataFrame):
         return df.iloc[:, -1].dropna()
     except Exception:
         return None
+
+def has_close_data(df: pd.DataFrame) -> bool:
+    try:
+        return ("Close" in df.columns) and (not df["Close"].dropna().empty)
+    except Exception:
+        return False
+
+# ——— Chart-Tools (MA, Plotly, Normalisierung) ———
+def add_mas(df: pd.DataFrame):
+    d = df.copy()
+    d["MA20"] = d["Close"].rolling(20).mean()
+    d["MA50"] = d["Close"].rolling(50).mean()
+    return d
+
+def fig_with_mas(df: pd.DataFrame, sym: str, show_ma20: bool, show_ma50: bool, normalize: bool):
+    d = add_mas(df)
+    series = d["Close"].dropna()
+
+    # optional: Index=100 Normalisierung
+    if normalize and not series.empty:
+        base = series.iloc[0]
+        if base != 0:
+            factor = 100.0 / base
+            d = d.copy()
+            d["Close"] = d["Close"] * factor
+            if "MA20" in d: d["MA20"] = d["MA20"] * factor
+            if "MA50" in d: d["MA50"] = d["MA50"] * factor
+
+    fig = go.Figure()
+    # Close
+    fig.add_trace(go.Scatter(
+        x=d.index, y=d["Close"], mode="lines", name=f"{sym} {'(Index=100)' if normalize else 'Close'}"
+    ))
+    # MAs
+    if show_ma20 and "MA20" in d and d["MA20"].notna().any():
+        fig.add_trace(go.Scatter(x=d.index, y=d["MA20"], mode="lines", name="MA20"))
+    if show_ma50 and "MA50" in d and d["MA50"].notna().any():
+        fig.add_trace(go.Scatter(x=d.index, y=d["MA50"], mode="lines", name="MA50"))
+
+    # Profi-Layout
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=30, b=0),
+        legend=dict(orientation="h"),
+        hovermode="x unified",
+        xaxis=dict(
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1, label="1M", step="month", stepmode="backward"),
+                    dict(count=3, label="3M", step="month", stepmode="backward"),
+                    dict(count=6, label="6M", step="month", stepmode="backward"),
+                    dict(step="all", label="All")
+                ])
+            ),
+            rangeslider=dict(visible=True),
+            type="date"
+        )
+    )
+    return fig
+
+# ——— News mit Symbol-Mapping (bessere Trefferquote) ———
+_NEWS_PROXY = {
+    "^GSPC": "SPY",    # S&P 500 ETF
+    "^NDX":  "QQQ",    # Nasdaq 100 ETF
+    "EURUSD=X": "EURUSD=X",
+    "GBPUSD=X": "GBPUSD=X",
+    "JPY=X": "JPY=X",
+    "CHFUSD=X": "CHFUSD=X",
+    "GC=F": "GC=F",
+    "CL=F": "CL=F",
+    "BTC-USD": "BTC-USD",
+    "ETH-USD": "ETH-USD",
+    "AAPL": "AAPL",
+    "TSLA": "TSLA",
+    "NVDA": "NVDA",
+}
+
+def get_news(symbol: str, limit: int = 5):
+    """Hole Headlines; für Indizes auf liquide ETFs mappen, damit Yahoo-News etwas liefert."""
+    try:
+        proxy = _NEWS_PROXY.get(symbol, symbol)
+        t = yf.Ticker(proxy)
+        news = getattr(t, "news", None)
+        if not news:
+            return []
+        return news[:limit]
+    except Exception:
+        return []
 
 
 # -----------------------------------------------------------------------------
