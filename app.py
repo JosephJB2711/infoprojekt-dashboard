@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 import plotly.graph_objects as go
+import datetime as dt
 # -----------------------------------------------------------------------------
 # Grundkonfiguration
 # -----------------------------------------------------------------------------
@@ -77,9 +78,67 @@ if not symbols:
 # -----------------------------------------------------------------------------
 # Utils
 # -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# Utils
-# -----------------------------------------------------------------------------
+
+
+def time_ago(epoch_secs: float) -> str:
+    """Wandelt Unix-Sekunden in 'vor X min/h/t' um."""
+    try:
+        ts = dt.datetime.fromtimestamp(float(epoch_secs), tz=dt.timezone.utc)
+    except Exception:
+        return ""
+    now = dt.datetime.now(dt.timezone.utc)
+    delta = now - ts
+    s = int(delta.total_seconds())
+    if s < 60:
+        return "gerade eben"
+    m = s // 60
+    if m < 60:
+        return f"vor {m} min"
+    h = m // 60
+    if h < 24:
+        return f"vor {h} h"
+    d = h // 24
+    return f"vor {d} Tagen"
+
+def normalize_news_item(item: dict) -> dict:
+    """Extrahiert robuste Felder aus yfinance-News."""
+    title = item.get("title", "Ohne Titel")
+    link = item.get("link", "#")
+    publisher = item.get("publisher", "")
+    # providerPublishTime ist Unix (Sekunden)
+    ts = item.get("providerPublishTime")
+    ago = time_ago(ts) if ts else ""
+    # Thumbnail (optional; Struktur variiert)
+    thumb = None
+    try:
+        th = item.get("thumbnail") or {}
+        res = th.get("resolutions") or []
+        if res:
+            thumb = res[0].get("url")
+    except Exception:
+        pass
+    return {"title": title, "link": link, "publisher": publisher, "ago": ago, "thumb": thumb, "raw": item}
+
+def get_news_multi(symbols: list[str], per_symbol: int = 5) -> list[dict]:
+    """Holt News für mehrere Symbole (mit Proxy-Mapping) und sortiert sie nach Zeit absteigend."""
+    all_items = []
+    seen_links = set()
+    for sym in symbols:
+        for raw in get_news(sym, limit=per_symbol):
+            n = normalize_news_item(raw)
+            # Dedupe per Link
+            if n["link"] in seen_links:
+                continue
+            seen_links.add(n["link"])
+            # Zeit für Sortierung (Fallback: 0)
+            ts = raw.get("providerPublishTime") or 0
+            n["ts"] = ts
+            n["sym"] = sym
+            all_items.append(n)
+    # Neueste zuerst
+    all_items.sort(key=lambda x: x.get("ts", 0), reverse=True)
+    return all_items
+
 def to_scalar(x):
     if isinstance(x, (pd.Series, list, tuple, np.ndarray)):
         return np.nan if len(x) == 0 else to_scalar(x[-1])
