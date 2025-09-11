@@ -421,29 +421,57 @@ with tab_charts:
 
 # ---------- NEWS TAB ----------
 # ---------- NEWS TAB ----------
-# ---------- NEWS TAB ----------
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
 
-    # Mapping sorgt für bessere Treffer (z. B. ^GSPC -> SPY)
-    for sym in symbols:
-        st.markdown(f"### {sym}")
-        items = get_news(sym, limit=6)
-        if not items:
-            st.info("Keine News gefunden. Tipp: Zeitraum/Asset wechseln oder Preset 'Tech' wählen.")
-            continue
+    # Steuerung
+    mode = st.radio("Ansicht", ["Kombiniert (alle Symbole)", "Pro Symbol"], horizontal=True, key="news_mode")
+    per_symbol = st.slider("Anzahl pro Symbol", 1, 10, 5, key="news_per_symbol")
+    refresh = st.button("🔄 Aktualisieren")
 
-        for item in items:
-            title     = item.get("title", "Ohne Titel")
-            link      = item.get("link", "#")
-            publisher = item.get("publisher", "")
-            # optional: Zeit (falls verfügbar)
-            st.markdown(
-                f"- [{title}]({link})  <span style='opacity:.6'>({publisher})</span>",
-                unsafe_allow_html=True
-            )
+    # Kombinierte Ansicht: ein Stream über alle Symbole, neueste zuerst
+    if mode.startswith("Kombiniert"):
+        news = get_news_multi(symbols, per_symbol=per_symbol)
+        if not news:
+            st.info("Keine News gefunden. Versuch andere Symbole (z. B. Tech) oder Zeitraum ändern.")
+        else:
+            for n in news:
+                cols = st.columns([1, 8])
+                with cols[0]:
+                    if n["thumb"]:
+                        try:
+                            st.image(n["thumb"], use_container_width=True)
+                        except Exception:
+                            st.empty()
+                with cols[1]:
+                    st.markdown(f"**[{n['title']}]({n['link']})**")
+                    meta = " · ".join([p for p in [n.get("publisher",""), n.get("ago","")] if p])
+                    if meta:
+                        st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
+            st.caption("🔎 Quelle: Yahoo Finance News (über yfinance)")
 
-
+    # Gruppiert pro Symbol
+    else:
+        for sym in symbols:
+            items = get_news(sym, limit=per_symbol)
+            st.markdown(f"### {sym}")
+            if not items:
+                st.write("Keine News gefunden.")
+                continue
+            for raw in items:
+                n = normalize_news_item(raw)
+                cols = st.columns([1, 8])
+                with cols[0]:
+                    if n["thumb"]:
+                        try:
+                            st.image(n["thumb"], use_container_width=True)
+                        except Exception:
+                            st.empty()
+                with cols[1]:
+                    st.markdown(f"**[{n['title']}]({n['link']})**")
+                    meta = " · ".join([p for p in [n.get("publisher",""), n.get("ago","")] if p])
+                    if meta:
+                        st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
 
 # Hinweis unten (optional)
 st.caption("ℹ️ Symbole: ^GSPC=S&P 500, ^NDX=Nasdaq 100, BTC-USD=Bitcoin, EURUSD=X=Euro/US-Dollar, GC=F=Gold")
