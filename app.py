@@ -421,19 +421,28 @@ with tab_charts:
 
 # ---------- NEWS TAB ----------
 # ---------- NEWS TAB ----------
+# ---------- NEWS TAB ----------
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
+
+    # Mapping sorgt für bessere Treffer (z. B. ^GSPC -> SPY)
     for sym in symbols:
-        items = get_news(sym, limit=5)
         st.markdown(f"### {sym}")
+        items = get_news(sym, limit=6)
         if not items:
-            st.write("Keine News gefunden.")
+            st.info("Keine News gefunden. Tipp: Zeitraum/Asset wechseln oder Preset 'Tech' wählen.")
             continue
+
         for item in items:
-            title = item.get("title", "Ohne Titel")
-            link  = item.get("link", "#")
+            title     = item.get("title", "Ohne Titel")
+            link      = item.get("link", "#")
             publisher = item.get("publisher", "")
-            st.markdown(f"- [{title}]({link})  <span style='opacity:.6'>({publisher})</span>", unsafe_allow_html=True)
+            # optional: Zeit (falls verfügbar)
+            st.markdown(
+                f"- [{title}]({link})  <span style='opacity:.6'>({publisher})</span>",
+                unsafe_allow_html=True
+            )
+
 
 
 # Hinweis unten (optional)
