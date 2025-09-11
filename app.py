@@ -285,6 +285,79 @@ def volatility(df: pd.DataFrame, days: int = 30):
 tab_kpi, tab_charts, tab_news = st.tabs(["📊 KPIs", "📈 Charts", "📰 News"])
 
 # ---------- KPI TAB ----------
+# ---------- KPI TAB ----------
+with tab_kpi:
+    # feiner Trenner oben
+    st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
+
+    items = list(frames.items())
+    rows_for_csv = []
+
+    # Immer 3 Karten pro Reihe (stabiles Layout)
+    chunk = 3
+    for start in range(0, len(items), chunk):
+        cols = st.columns(chunk)
+        for col, (sym, df) in zip(cols, items[start:start+chunk]):
+            with col:
+                # Daten-Check
+                if not has_close_data(df):
+                    st.warning(f"{sym}: Keine Daten verfügbar.")
+                    continue
+
+                # KPIs berechnen
+                price, d, w, m = kpis(df)
+                vol = volatility(df)
+
+                # Titel mit BTC-Logo nur für BTC-USD
+                if sym == "BTC-USD":
+                    head_l, head_r = st.columns([1, 5])
+                    with head_l:
+                        try:
+                            st.image("bitcoin_PNG7.png", width=28)
+                        except Exception:
+                            pass
+                    with head_r:
+                        st.subheader(sym)
+                else:
+                    st.subheader(sym)
+
+                # Preis + Delta (24h) – Streamlit färbt den Delta-Wert automatisch grün/rot
+                st.metric("Preis", fmt(price), delta=fmt(d, "%"))
+
+                # Farbige Prozentwerte (eigene, kräftige Darstellung)
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown(color_pct_html(d, "24h"),     unsafe_allow_html=True)
+                with c2:
+                    st.markdown(color_pct_html(w, "7 Tage"),  unsafe_allow_html=True)
+                st.markdown(color_pct_html(m,  "30 Tage"),    unsafe_allow_html=True)
+                st.markdown(color_pct_html(vol,"Volatilität (30T)"), unsafe_allow_html=True)
+
+                # Für CSV sammeln
+                rows_for_csv.append({
+                    "Symbol": sym,
+                    "Preis": to_scalar(price),
+                    "24h_%": to_scalar(d),
+                    "7d_%": to_scalar(w),
+                    "30d_%": to_scalar(m),
+                    "Vol_30T_%": to_scalar(vol),
+                })
+
+    # CSV-Download (einmal, rechts ausgerichtet)
+    kpi_df = pd.DataFrame(rows_for_csv)
+    btn_l, btn_r = st.columns([3, 1])
+    with btn_r:
+        st.download_button(
+            label="⬇️ KPIs als CSV",
+            data=kpi_df.to_csv(index=False).encode("utf-8"),
+            file_name="kpis.csv",
+            mime="text/csv",
+            key="kpi_csv_download_button"
+        )
+
+    # feiner Trenner unten
+    st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
+
 # ---------- CHARTS TAB ----------
 with tab_charts:
     # Optionen oberhalb der Unter-Tabs
