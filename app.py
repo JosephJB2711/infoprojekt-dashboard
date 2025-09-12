@@ -579,18 +579,15 @@ with tab_charts:
             st.info("Keine Daten für Korrelation verfügbar.")
 
 # ---------- NEWS TAB ----------
-thumb = n.get("thumb")   # sicher abfragen
-if thumb:
-    try:
-        st.image(thumb, use_container_width=True)
-    except Exception:
-        st.empty()
-
-
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
 
-    mode = st.radio("Ansicht", ["Kombiniert (alle Symbole)", "Pro Symbol"], horizontal=True, key="news_mode")
+    mode = st.radio(
+        "Ansicht",
+        ["Kombiniert (alle Symbole)", "Pro Symbol"],
+        horizontal=True,
+        key="news_mode"
+    )
     per_symbol = st.slider("Anzahl pro Symbol", 1, 10, 5, key="news_per_symbol")
     st.button("🔄 Aktualisieren")  # triggert Rerun
 
@@ -598,17 +595,21 @@ with tab_news:
         feed = get_news_multi(symbols, per_symbol=per_symbol)
         if not feed:
             st.info("Keine News gefunden. Tipp: Preset 'Tech' wählen oder andere Symbole.")
-        for n in feed:
-            c0, c1 = st.columns([1, 8])
-            with c0:
-                if n["thumb"]:
-                    try: st.image(n["thumb"], use_container_width=True)
-                    except: st.empty()
-            with c1:
-                st.markdown(f"**[{n['title']}]({n['link']})**")
-                meta = " · ".join([p for p in [n.get('publisher',''), n.get('ago',''), n.get('sym','')] if p])
-                if meta:
-                    st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
+        else:
+            for n in feed:
+                c0, c1 = st.columns([1, 8])
+                with c0:
+                    thumb = n.get("thumb")  # <-- sicher abfragen
+                    if thumb:
+                        try:
+                            st.image(thumb, use_container_width=True)
+                        except Exception:
+                            st.empty()
+                with c1:
+                    st.markdown(f"**[{n['title']}]({n['link']})**")
+                    meta = " · ".join([p for p in [n.get('publisher',''), n.get('ago',''), n.get('sym','')] if p])
+                    if meta:
+                        st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
         st.caption("🔎 Quelle: Yahoo Finance News (yfinance)")
 
     else:  # Pro Symbol
@@ -621,20 +622,18 @@ with tab_news:
             for n in items:
                 c0, c1 = st.columns([1, 8])
                 with c0:
-                    if n["thumb"]:
-                        try: st.image(n["thumb"], use_container_width=True)
-                        except: st.empty()
+                    thumb = n.get("thumb")  # <-- sicher abfragen
+                    if thumb:
+                        try:
+                            st.image(thumb, use_container_width=True)
+                        except Exception:
+                            st.empty()
                 with c1:
                     st.markdown(f"**[{n['title']}]({n['link']})**")
                     meta = " · ".join([p for p in [n.get('publisher',''), n.get('ago','')] if p])
                     if meta:
                         st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
-        thumb = n.get("thumb")
-    if thumb:
-      try:
-        st.image(thumb, use_container_width=True)
-      except Exception:
-        st.empty()
+
 
 
 # Hinweis unten (optional)
