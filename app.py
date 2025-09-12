@@ -7,6 +7,12 @@ import datetime as dt
 # -----------------------------------------------------------------------------
 # Grundkonfiguration
 # -----------------------------------------------------------------------------
+# --- Session Defaults (MÜSSEN ganz oben stehen) ---
+if "symbols" not in st.session_state:
+    st.session_state.symbols = ["^GSPC", "BTC-USD"]
+if "rng" not in st.session_state:
+    st.session_state.rng = "3M"
+
 with st.container():
     st.markdown("### 📈 Mini-Wirtschafts-Dashboard")
     st.markdown("Täglich ~1h coden • Python • GitHub • Live-KPIs")
