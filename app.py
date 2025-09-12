@@ -310,30 +310,14 @@ def get_news(symbol: str, limit: int = 5):
 # -----------------------------------------------------------------------------
 @st.cache_data(ttl=3600, show_spinner=True)
 def load(symbols, period):
-    """
-    Lädt Preise robust.
-    - Für 'max' nutzen wir Wochen-Intervalle (1wk): schneller + vollständige Historie.
-    - Für kürzere Perioden: tägliche Daten (1d).
-    """
     out = {}
-    interval = "1wk" if period == "max" else "1d"
-
     for s in symbols:
-        try:
-            df = yf.download(
-                s,
-                period=period,
-                interval=interval,
-                auto_adjust=True,
-                progress=False,
-                group_by="column"
-            )
-            c = extract_close(df)
-            if c is not None and not c.empty:
-                out[s] = pd.DataFrame({"Close": c})
-        except Exception:
-            continue
+        df = yf.download(s, period=period, interval="1d", auto_adjust=True, progress=False, group_by="column")
+        c = extract_close(df)
+        if c is not None and not c.empty:
+            out[s] = pd.DataFrame({"Close": c})
     return out
+
 
 frames = load(symbols, period_map[rng])
 if not frames:
