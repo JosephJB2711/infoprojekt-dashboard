@@ -97,6 +97,92 @@ if not symbols:
 # -----------------------------------------------------------------------------
 # Utils
 # -----------------------------------------------------------------------------
+# --- NEWS Utils ---
+import datetime as dt
+from urllib.parse import urlparse
+
+# Indizes/FX/Rohstoffe -> liquide ETFs, damit Yahoo zuverlässig Headlines liefert
+_NEWS_PROXY = {
+    "^GSPC": "SPY",  # S&P 500
+    "^NDX":  "QQQ",  # Nasdaq 100
+    "GC=F":  "GLD",  # Gold
+    "CL=F":  "USO",  # WTI Öl
+    # FX -> Währungs-ETFs (liefert echte News)
+    "EURUSD=X": "FXE",
+    "GBPUSD=X": "FXB",
+    "JPY=X":    "FXY",
+    "CHFUSD=X": "FXF",  # wenn du später USDCHF=X nutzt, Proxy kann FXF bleiben
+    # Krypto/Aktien direkt
+    "BTC-USD": "BTC-USD",
+    "ETH-USD": "ETH-USD",
+    "AAPL": "AAPL", "TSLA": "TSLA", "NVDA": "NVDA",
+}
+
+def time_ago(epoch_secs: float) -> str:
+    """Unix-Sekunden -> 'vor X min/h/Tagen'"""
+    try:
+        ts = dt.datetime.fromtimestamp(float(epoch_secs), tz=dt.timezone.utc)
+    except Exception:
+        return ""
+    now = dt.datetime.now(dt.timezone.utc)
+    s = int((now - ts).total_seconds())
+    if s < 60: return "gerade eben"
+    m = s // 60
+    if m < 60: return f"vor {m} min"
+    h = m // 60
+    if h < 24: return f"vor {h} h"
+    d = h // 24
+    return f"vor {d} Tagen"
+
+def _fallback_title_from_link(link: str) -> str:
+    """Titel-Notlösung, falls Yahoo keinen Titel liefert."""
+    try:
+        p = urlparse(link or "")
+        slug = p.path.strip("/").split("/")[-1].replace("-", " ")
+        host = p.netloc.replace("www.", "")
+        return (slug.title() if slug else host) or "News"
+    except Exception:
+        return "News"
+
+def normalize_news_item(item: dict) -> dict:
+    """Robuste Felder (Titel, Link, Publisher, Zeit, Thumbnail) extrahieren."""
+    link = item.get("link", "#")
+    title = item.get("title") or _fallback_title_from_link(link)
+    publisher = item.get("publisher", "")
+    ts = item.get("providerPublishTime")
+    ago = time_ago(ts) if ts else ""
+    thumb = None
+    try:
+        res = (item.get("thumbnail") or {}).get("resolutions") or []
+        if res:
+            thumb = res[0].get("url")
+    except Exception:
+        pass
+    return {"title": title, "link": link, "publisher": publisher, "ago": ago, "thumb": thumb, "raw": item}
+
+def get_news(symbol: str, limit: int = 5):
+    """Headlines mit Proxy-Mapping (mehr Treffer)."""
+    try:
+        proxy = _NEWS_PROXY.get(symbol, symbol)
+        t = yf.Ticker(proxy)
+        return (getattr(t, "news", None) or [])[:limit]
+    except Exception:
+        return []
+
+def get_news_multi(symbols: list[str], per_symbol: int = 5) -> list[dict]:
+    """News für mehrere Symbole sammeln + deduplizieren + nach Zeit sortieren."""
+    items, seen = [], set()
+    for sym in symbols:
+        for raw in get_news(sym, limit=per_symbol):
+            n = normalize_news_item(raw)
+            if n["link"] in seen:
+                continue
+            seen.add(n["link"])
+            n["sym"] = sym
+            n["ts"] = raw.get("providerPublishTime") or 0
+            items.append(n)
+    items.sort(key=lambda x: x["ts"], reverse=True)
+    return items
 
 
 def time_ago(epoch_secs: float) -> str:
