@@ -560,52 +560,44 @@ with tab_charts:
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
 
-    # Steuerung
     mode = st.radio("Ansicht", ["Kombiniert (alle Symbole)", "Pro Symbol"], horizontal=True, key="news_mode")
     per_symbol = st.slider("Anzahl pro Symbol", 1, 10, 5, key="news_per_symbol")
-    refresh = st.button("🔄 Aktualisieren")
+    st.button("🔄 Aktualisieren")  # triggert Rerun
 
-    # Kombinierte Ansicht: ein Stream über alle Symbole, neueste zuerst
     if mode.startswith("Kombiniert"):
-        news = get_news_multi(symbols, per_symbol=per_symbol)
-        if not news:
-            st.info("Keine News gefunden. Versuch andere Symbole (z. B. Tech) oder Zeitraum ändern.")
-        else:
-            for n in news:
-                cols = st.columns([1, 8])
-                with cols[0]:
-                    if n["thumb"]:
-                        try:
-                            st.image(n["thumb"], use_container_width=True)
-                        except Exception:
-                            st.empty()
-                with cols[1]:
-                    st.markdown(f"**[{n['title']}]({n['link']})**")
-                    meta = " · ".join([p for p in [n.get("publisher",""), n.get("ago","")] if p])
-                    if meta:
-                        st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
-            st.caption("🔎 Quelle: Yahoo Finance News (über yfinance)")
+        feed = get_news_multi(symbols, per_symbol=per_symbol)
+        if not feed:
+            st.info("Keine News gefunden. Tipp: Preset 'Tech' wählen oder andere Symbole.")
+        for n in feed:
+            c0, c1 = st.columns([1, 8])
+            with c0:
+                if n["thumb"]:
+                    try: st.image(n["thumb"], use_container_width=True)
+                    except: st.empty()
+            with c1:
+                st.markdown(f"**[{n['title']}]({n['link']})**")
+                meta = " · ".join([p for p in [n.get('publisher',''), n.get('ago',''), n.get('sym','')] if p])
+                if meta:
+                    st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
+        st.caption("🔎 Quelle: Yahoo Finance News (yfinance)")
 
-    # Gruppiert pro Symbol
-    else:
+    else:  # Pro Symbol
         for sym in symbols:
-            items = get_news(sym, limit=per_symbol)
             st.markdown(f"### {sym}")
+            items = get_news(sym, limit=per_symbol)
             if not items:
                 st.write("Keine News gefunden.")
                 continue
             for raw in items:
                 n = normalize_news_item(raw)
-                cols = st.columns([1, 8])
-                with cols[0]:
+                c0, c1 = st.columns([1, 8])
+                with c0:
                     if n["thumb"]:
-                        try:
-                            st.image(n["thumb"], use_container_width=True)
-                        except Exception:
-                            st.empty()
-                with cols[1]:
+                        try: st.image(n["thumb"], use_container_width=True)
+                        except: st.empty()
+                with c1:
                     st.markdown(f"**[{n['title']}]({n['link']})**")
-                    meta = " · ".join([p for p in [n.get("publisher",""), n.get("ago","")] if p])
+                    meta = " · ".join([p for p in [n.get('publisher',''), n.get('ago','')] if p])
                     if meta:
                         st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
 
