@@ -579,6 +579,7 @@ with tab_charts:
             st.info("Keine Daten für Korrelation verfügbar.")
 
 # ---------- NEWS TAB ----------
+# ---------- NEWS TAB ----------
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
 
@@ -610,8 +611,7 @@ with tab_news:
             if not items:
                 st.write("Keine News gefunden.")
                 continue
-            for raw in items:
-                n = normalize_news_item(raw)
+            for n in items:
                 c0, c1 = st.columns([1, 8])
                 with c0:
                     if n["thumb"]:
@@ -622,6 +622,7 @@ with tab_news:
                     meta = " · ".join([p for p in [n.get('publisher',''), n.get('ago','')] if p])
                     if meta:
                         st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
+
 
 # Hinweis unten (optional)
 st.caption("ℹ️ Symbole: ^GSPC=S&P 500, ^NDX=Nasdaq 100, BTC-USD=Bitcoin, EURUSD=X=Euro/US-Dollar, GC=F=Gold")
