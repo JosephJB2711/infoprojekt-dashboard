@@ -16,7 +16,20 @@ st.markdown("<hr style='opacity:0.3'>", unsafe_allow_html=True)
 # -----------------------------------------------------------------------------
 # Sidebar (Presets + Zeitraum) mit Session State
 # -----------------------------------------------------------------------------
-period_map = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "5Y": "5y"}
+period_map = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "5Y": "5y","MAX": "max" }
+if "rng" not in st.session_state:
+    st.session_state.rng = "3M"
+
+# ... (Presets & Multiselect wie gehabt)
+
+st.session_state.rng = st.selectbox(
+    "Zeitraum",
+    list(period_map.keys()),
+    index=list(period_map.keys()).index(st.session_state.rng)
+)
+
+symbols = st.session_state.symbols
+rng = st.session_state.rng
 
 if "symbols" not in st.session_state:
     st.session_state.symbols = ["^GSPC", "BTC-USD"]
