@@ -579,9 +579,13 @@ with tab_charts:
             st.info("Keine Daten für Korrelation verfügbar.")
 
 # ---------- NEWS TAB ----------
-if n["thumb"]:
-    try: st.image(n["thumb"], use_container_width=True)
-    except: st.empty()
+thumb = n.get("thumb")   # sicher abfragen
+if thumb:
+    try:
+        st.image(thumb, use_container_width=True)
+    except Exception:
+        st.empty()
+
 
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
