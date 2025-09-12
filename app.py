@@ -579,7 +579,10 @@ with tab_charts:
             st.info("Keine Daten für Korrelation verfügbar.")
 
 # ---------- NEWS TAB ----------
-# ---------- NEWS TAB ----------
+if n["thumb"]:
+    try: st.image(n["thumb"], use_container_width=True)
+    except: st.empty()
+
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
 
@@ -622,6 +625,12 @@ with tab_news:
                     meta = " · ".join([p for p in [n.get('publisher',''), n.get('ago','')] if p])
                     if meta:
                         st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
+        thumb = n.get("thumb")
+    if thumb:
+      try:
+        st.image(thumb, use_container_width=True)
+      except Exception:
+        st.empty()
 
 
 # Hinweis unten (optional)
