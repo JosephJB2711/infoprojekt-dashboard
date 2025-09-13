@@ -579,7 +579,6 @@ with tab_charts:
             st.info("Keine Daten für Korrelation verfügbar.")
 
 # ---------- NEWS TAB ----------
-# ---------- NEWS TAB ----------
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
 
@@ -592,28 +591,48 @@ with tab_news:
     per_symbol = st.slider("Anzahl pro Symbol", 1, 10, 5, key="news_per_symbol")
     st.button("🔄 Aktualisieren")  # triggert Rerun
 
+    def render_item(n, show_sym_tag=False):
+        # Sicher auslesen + Fallbacks
+        title = (n.get("title") or "").strip()
+        link  = (n.get("link")  or "").strip()
+        if not link:
+            return  # ohne Link nicht anzeigen
+        if not title:
+            # Falls du _fallback_title_from_link() in Utils hast, gern verwenden:
+            # title = _fallback_title_from_link(link)
+            # minimaler Fallback:
+            title = "News"
+
+        publisher = (n.get("publisher") or "").strip()
+        ago       = (n.get("ago") or "").strip()
+        sym_tag   = (n.get("sym") or "").strip() if show_sym_tag else ""
+
+        c0, c1 = st.columns([1, 8])
+        with c0:
+            thumb = n.get("thumb")
+            if thumb:
+                try:
+                    st.image(thumb, use_container_width=True)
+                except Exception:
+                    st.empty()
+        with c1:
+            st.markdown(f"**[{title}]({link})**")
+            meta_parts = [publisher, ago]
+            if show_sym_tag and sym_tag:
+                meta_parts.append(sym_tag)
+            meta = " · ".join([p for p in meta_parts if p])
+            if meta:
+                st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
+
     if mode.startswith("Kombiniert"):
         feed = get_news_multi(symbols, per_symbol=per_symbol)
         if not feed:
             st.info("Keine News gefunden. Tipp: Preset 'Tech' wählen oder andere Symbole.")
         else:
             for n in feed:
-                c0, c1 = st.columns([1, 8])
-                with c0:
-                    thumb = n.get("thumb")  # <-- sicher abfragen
-                    if thumb:
-                        try:
-                            st.image(thumb, use_container_width=True)
-                        except Exception:
-                            st.empty()
-                with c1:
-                    st.markdown(f"**[{n['title']}]({n['link']})**")
-                    meta = " · ".join([p for p in [n.get('publisher',''), n.get('ago',''), n.get('sym','')] if p])
-                    if meta:
-                        st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
+                render_item(n, show_sym_tag=True)
         st.caption("🔎 Quelle: Yahoo Finance News (yfinance)")
-
-    else:  # Pro Symbol
+    else:
         for sym in symbols:
             st.markdown(f"### {sym}")
             items = get_news(sym, limit=per_symbol)
@@ -621,19 +640,7 @@ with tab_news:
                 st.write("Keine News gefunden.")
                 continue
             for n in items:
-                c0, c1 = st.columns([1, 8])
-                with c0:
-                    thumb = n.get("thumb")  # <-- sicher abfragen
-                    if thumb:
-                        try:
-                            st.image(thumb, use_container_width=True)
-                        except Exception:
-                            st.empty()
-                with c1:
-                    st.markdown(f"**[{n['title']}]({n['link']})**")
-                    meta = " · ".join([p for p in [n.get('publisher',''), n.get('ago','')] if p])
-                    if meta:
-                        st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
+                render_item(n, show_sym_tag=False)
 
 
 
