@@ -205,17 +205,15 @@ def get_news_multi(symbols, per_symbol=5):
     items.sort(key=lambda x: x.get("ts", 0), reverse=True)
     return items
 
-def fallback_news_links(sym):
-   if not feed:
-    st.warning("⚠️ Keine News via yfinance gefunden – hier ein paar Alternativen:")
-    for sym in symbols[:3]:
-        with st.container():
-            st.markdown(f"#### 🔎 {sym}")
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown(f"[🌐 Google News](https://news.google.com/search?q={quote_plus(sym)})")
-            with c2:
-                st.markdown(f"[📊 Yahoo Finance](https://finance.yahoo.com/quote/{quote_plus(sym)}/news)")
+from urllib.parse import quote_plus  # sicherstellen, dass das importiert ist
+
+def fallback_news_links(sym: str) -> list[tuple[str, str]]:
+    """Gibt (Label, URL)-Paare zurück – kein Rendering hier drin!"""
+    return [
+        (f"🌐 Google News",  f"https://news.google.com/search?q={quote_plus(sym)}"),
+        (f"📊 Yahoo Finance", f"https://finance.yahoo.com/quote/{quote_plus(sym)}/news"),
+    ]
+
 
 
 
@@ -572,10 +570,17 @@ with tab_news:
     if mode.startswith("Kombiniert"):
         feed = get_news_multi(symbols, per_symbol=per_symbol)
         if not feed:
-            st.info("Keine News via yfinance gefunden. Alternativen:")
-            for sym in symbols[:3]:
-                for label, url in fallback_news_links(sym):
-                    st.markdown(f"- [{label}]({url})")
+          st.warning("⚠️ Keine News via yfinance gefunden – hier ein paar Alternativen:")
+          for sym in symbols[:3]:
+            with st.container():
+              st.markdown(f"#### 🔎 {sym}")
+              c1, c2 = st.columns(2)
+              links = fallback_news_links(sym)
+              with c1:
+                st.markdown(f"[{links[0][0]}]({links[0][1]})")
+              with c2:
+                st.markdown(f"[{links[1][0]}]({links[1][1]})")
+
         else:
             for n in feed:
                 render_item(n, show_sym_tag=True)
