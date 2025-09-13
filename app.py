@@ -93,37 +93,26 @@ rng = st.session_state.rng
 if not symbols:
     st.info("Links etwas auswählen, z. B. **S&P 500 (^GSPC)** oder **Bitcoin (BTC-USD)**.")
     st.stop()
-
-# -----------------------------------------------------------------------------
-# --- NEWS Utils (robust, dedupliziert) ---
+# --- NEWS Utils (robust & defensiv) ---
 import time
 import datetime as dt
 from urllib.parse import urlparse, quote_plus
 
-# Für jedes Symbol mehrere Alternativen ausprobieren (bis echte News kommen)
 NEWS_PROXY_CHAIN = {
-    # Indizes -> ETFs
-    "^GSPC":  ["SPY", "^GSPC"],
-    "^NDX":   ["QQQ", "^NDX"],
-    # Rohstoffe -> populäre ETFs
-    "GC=F":   ["GLD", "GC=F"],     # Gold
-    "CL=F":   ["USO", "CL=F"],     # Öl (WTI)
-    # Krypto – mehrere Quellen (ETF/Trust/Börse/direkt)
+    "^GSPC": ["SPY", "^GSPC"],
+    "^NDX":  ["QQQ", "^NDX"],
+    "GC=F":  ["GLD", "GC=F"],
+    "CL=F":  ["USO", "CL=F"],
     "BTC-USD": ["BTC-USD", "GBTC", "BITO", "COIN", "MSTR"],
     "ETH-USD": ["ETH-USD", "ETHE", "COIN"],
-    # FX – Währungs-ETFs zuerst (liefern eher News)
     "EURUSD=X": ["FXE", "EURUSD=X"],
     "GBPUSD=X": ["FXB", "GBPUSD=X"],
     "JPY=X":    ["FXY", "JPY=X"],
     "CHFUSD=X": ["FXF", "CHFUSD=X"],
-    # Aktien
-    "AAPL": ["AAPL"],
-    "TSLA": ["TSLA"],
-    "NVDA": ["NVDA"],
+    "AAPL": ["AAPL"], "TSLA": ["TSLA"], "NVDA": ["NVDA"],
 }
 
-def time_ago(epoch_secs: float) -> str:
-    """Unix-Sekunden -> 'vor X min/h/Tagen'."""
+def time_ago(epoch_secs):
     try:
         ts = dt.datetime.fromtimestamp(float(epoch_secs), tz=dt.timezone.utc)
     except Exception:
@@ -138,8 +127,7 @@ def time_ago(epoch_secs: float) -> str:
     d = h // 24
     return f"vor {d} Tagen"
 
-def _fallback_title_from_link(link: str) -> str:
-    """Titel-Notlösung, falls Yahoo keinen Titel liefert."""
+def _fallback_title_from_link(link):
     try:
         p = urlparse(link or "")
         slug = p.path.strip("/").split("/")[-1].replace("-", " ").strip()
@@ -148,11 +136,12 @@ def _fallback_title_from_link(link: str) -> str:
     except Exception:
         return "News"
 
-def normalize_news_item(item: dict) -> dict:
-    """Robuste Felder (Titel, Link, Publisher, Zeit, Thumbnail) extrahieren."""
+def normalize_news_item(item):
+    if not isinstance(item, dict):
+        return None
     link = (item.get("link") or "").strip()
     if not link:
-        return {}  # ohne Link unbrauchbar
+        return None
     title = (item.get("title") or "").strip() or _fallback_title_from_link(link)
     publisher = (item.get("publisher") or "").strip()
     ts = item.get("providerPublishTime")
@@ -164,53 +153,59 @@ def normalize_news_item(item: dict) -> dict:
             thumb = res[0].get("url")
     except Exception:
         pass
-    return {"title": title, "link": link, "publisher": publisher, "ago": ago, "thumb": thumb, "raw": item}
+    return {
+        "title": title,
+        "link": link,
+        "publisher": publisher,
+        "ago": ago,
+        "thumb": thumb,
+        "raw": item,
+    }
 
-def get_news(symbol: str, limit: int = 6) -> list[dict]:
-    """
-    Probiert mehrere Proxies nacheinander, filtert leere Items raus,
-    dedupliziert per Link und macht kurze Pausen (gegen Rate-Limits).
-    """
+def get_news(symbol, limit=6):
+    """Teste mehrere Proxies; filter/normalize/dedupe; vermeide KeyErrors."""
     proxies = NEWS_PROXY_CHAIN.get(symbol, [symbol])
+    seen = set()
+    out = []
     for p in proxies:
         try:
             t = yf.Ticker(p)
             raw = getattr(t, "news", None) or []
-            items = []
-            for it in raw[:limit * 2]:  # etwas mehr holen, später filtern
-                n = normalize_news_item(it)
-                if n and n.get("title") and n.get("link"):
-                    items.append(n)
-            if items:
-                # dedupe per Link
-                seen, deduped = set(), []
-                for n in items:
-                    if n["link"] in seen:
-                        continue
-                    seen.add(n["link"])
-                    deduped.append(n)
-                return deduped[:limit]
         except Exception:
-            pass
-        time.sleep(0.2)  # sanfte Pause gegen Throttling
-    return []
+            raw = []
+        for it in raw[:limit * 2]:
+            n = normalize_news_item(it)
+            if not n:
+                continue
+            link = (n.get("link") or "").strip()
+            title = (n.get("title") or "").strip()
+            if not link or not title:
+                continue
+            if link in seen:
+                continue
+            seen.add(link)
+            out.append(n)
+            if len(out) >= limit:
+                return out
+        time.sleep(0.2)  # sanfte Pause gg. Throttling
+    return out
 
-def get_news_multi(symbols: list[str], per_symbol: int = 5) -> list[dict]:
-    """Sammelt News über alle Symbole, dedupliziert & sortiert nach Zeit."""
+def get_news_multi(symbols, per_symbol=5):
+    """Sammelt News über alle Symbole, dedupliziert & sortiert."""
     items, seen = [], set()
     for sym in symbols:
         for n in get_news(sym, limit=per_symbol):
-            if n["link"] in seen:
+            link = (n.get("link") or "").strip()
+            if not link or link in seen:
                 continue
-            seen.add(n["link"])
+            seen.add(link)
             n["sym"] = sym
-            n["ts"] = n.get("raw", {}).get("providerPublishTime") or 0
+            n["ts"] = (n.get("raw") or {}).get("providerPublishTime") or 0
             items.append(n)
-    items.sort(key=lambda x: x["ts"], reverse=True)
+    items.sort(key=lambda x: x.get("ts", 0), reverse=True)
     return items
 
-def fallback_news_links(sym: str) -> list[tuple[str, str]]:
-    """Klickbare Fallback-Links (Google News & Yahoo Finance) pro Symbol."""
+def fallback_news_links(sym):
     return [
         (f"🔎 Google News – {sym}", f"https://news.google.com/search?q={quote_plus(sym)}"),
         (f"📰 Yahoo Finance – {sym}", f"https://finance.yahoo.com/quote/{quote_plus(sym)}/news"),
@@ -541,6 +536,8 @@ with tab_news:
     st.button("🔄 Aktualisieren")  # triggert Rerun
 
     def render_item(n, show_sym_tag=False):
+        if not isinstance(n, dict):
+            return
         title = (n.get("title") or "News").strip()
         link  = (n.get("link")  or "").strip()
         if not link:
@@ -559,7 +556,10 @@ with tab_news:
                     st.empty()
         with c1:
             st.markdown(f"**[{title}]({link})**")
-            meta = " · ".join([p for p in [publisher, ago, sym_tag] if p])
+            meta_parts = [publisher, ago]
+            if show_sym_tag and sym_tag:
+                meta_parts.append(sym_tag)
+            meta = " · ".join([p for p in meta_parts if p])
             if meta:
                 st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
 
