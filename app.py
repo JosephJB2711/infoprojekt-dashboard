@@ -536,27 +536,15 @@ with tab_charts:
 with tab_news:
     st.subheader("Aktuelle Nachrichten")
 
-    mode = st.radio(
-        "Ansicht",
-        ["Kombiniert (alle Symbole)", "Pro Symbol"],
-        horizontal=True,
-        key="news_mode"
-    )
+    mode = st.radio("Ansicht", ["Kombiniert (alle Symbole)", "Pro Symbol"], horizontal=True, key="news_mode")
     per_symbol = st.slider("Anzahl pro Symbol", 1, 10, 5, key="news_per_symbol")
     st.button("🔄 Aktualisieren")  # triggert Rerun
 
     def render_item(n, show_sym_tag=False):
-        # Sicher auslesen + Fallbacks
-        title = (n.get("title") or "").strip()
+        title = (n.get("title") or "News").strip()
         link  = (n.get("link")  or "").strip()
         if not link:
-            return  # ohne Link nicht anzeigen
-        if not title:
-            # Falls du _fallback_title_from_link() in Utils hast, gern verwenden:
-            # title = _fallback_title_from_link(link)
-            # minimaler Fallback:
-            title = "News"
-
+            return
         publisher = (n.get("publisher") or "").strip()
         ago       = (n.get("ago") or "").strip()
         sym_tag   = (n.get("sym") or "").strip() if show_sym_tag else ""
@@ -571,30 +559,34 @@ with tab_news:
                     st.empty()
         with c1:
             st.markdown(f"**[{title}]({link})**")
-            meta_parts = [publisher, ago]
-            if show_sym_tag and sym_tag:
-                meta_parts.append(sym_tag)
-            meta = " · ".join([p for p in meta_parts if p])
+            meta = " · ".join([p for p in [publisher, ago, sym_tag] if p])
             if meta:
                 st.markdown(f"<span style='opacity:.6'>{meta}</span>", unsafe_allow_html=True)
 
     if mode.startswith("Kombiniert"):
         feed = get_news_multi(symbols, per_symbol=per_symbol)
         if not feed:
-            st.info("Keine News gefunden. Tipp: Preset 'Tech' wählen oder andere Symbole.")
+            st.info("Keine News via yfinance gefunden. Alternativen:")
+            for sym in symbols[:3]:
+                for label, url in fallback_news_links(sym):
+                    st.markdown(f"- [{label}]({url})")
         else:
             for n in feed:
                 render_item(n, show_sym_tag=True)
-        st.caption("🔎 Quelle: Yahoo Finance News (yfinance)")
-    else:
+        st.caption("🔎 Quelle: Yahoo Finance News (yfinance) – mit Proxy-Ketten & Fallback-Links")
+
+    else:  # Pro Symbol
         for sym in symbols:
             st.markdown(f"### {sym}")
             items = get_news(sym, limit=per_symbol)
             if not items:
-                st.write("Keine News gefunden.")
+                st.write("Keine News via yfinance gefunden. Alternativen:")
+                for label, url in fallback_news_links(sym):
+                    st.markdown(f"- [{label}]({url})")
                 continue
             for n in items:
                 render_item(n, show_sym_tag=False)
+
 
 
 
