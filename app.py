@@ -206,10 +206,16 @@ def get_news_multi(symbols, per_symbol=5):
     return items
 
 def fallback_news_links(sym):
-    return [
-        (f"🔎 Google News – {sym}", f"https://news.google.com/search?q={quote_plus(sym)}"),
-        (f"📰 Yahoo Finance – {sym}", f"https://finance.yahoo.com/quote/{quote_plus(sym)}/news"),
-    ]
+   if not feed:
+    st.warning("⚠️ Keine News via yfinance gefunden – hier ein paar Alternativen:")
+    for sym in symbols[:3]:
+        with st.container():
+            st.markdown(f"#### 🔎 {sym}")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown(f"[🌐 Google News](https://news.google.com/search?q={quote_plus(sym)})")
+            with c2:
+                st.markdown(f"[📊 Yahoo Finance](https://finance.yahoo.com/quote/{quote_plus(sym)}/news)")
 
 
 
