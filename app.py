@@ -95,23 +95,23 @@ if not symbols:
     st.stop()
 
 # -----------------------------------------------------------------------------
-# Utils
-# --- NEWS Utils (robust) ---
+# --- NEWS Utils (robust, dedupliziert) ---
+import time
 import datetime as dt
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote_plus
 
 # Für jedes Symbol mehrere Alternativen ausprobieren (bis echte News kommen)
 NEWS_PROXY_CHAIN = {
-    # Indizes
+    # Indizes -> ETFs
     "^GSPC":  ["SPY", "^GSPC"],
     "^NDX":   ["QQQ", "^NDX"],
-    # Rohstoffe
-    "GC=F":   ["GLD", "GC=F"],
-    "CL=F":   ["USO", "CL=F"],
-    # Krypto – mehrere Quellen (ETF, Trust, Börse, direkt)
-    "BTC-USD": ["BTC-USD", "GBTC", "BITO", "COIN"],
+    # Rohstoffe -> populäre ETFs
+    "GC=F":   ["GLD", "GC=F"],     # Gold
+    "CL=F":   ["USO", "CL=F"],     # Öl (WTI)
+    # Krypto – mehrere Quellen (ETF/Trust/Börse/direkt)
+    "BTC-USD": ["BTC-USD", "GBTC", "BITO", "COIN", "MSTR"],
     "ETH-USD": ["ETH-USD", "ETHE", "COIN"],
-    # FX – Währungs-ETFs zuerst (haben eher News)
+    # FX – Währungs-ETFs zuerst (liefern eher News)
     "EURUSD=X": ["FXE", "EURUSD=X"],
     "GBPUSD=X": ["FXB", "GBPUSD=X"],
     "JPY=X":    ["FXY", "JPY=X"],
@@ -123,6 +123,7 @@ NEWS_PROXY_CHAIN = {
 }
 
 def time_ago(epoch_secs: float) -> str:
+    """Unix-Sekunden -> 'vor X min/h/Tagen'."""
     try:
         ts = dt.datetime.fromtimestamp(float(epoch_secs), tz=dt.timezone.utc)
     except Exception:
@@ -138,6 +139,7 @@ def time_ago(epoch_secs: float) -> str:
     return f"vor {d} Tagen"
 
 def _fallback_title_from_link(link: str) -> str:
+    """Titel-Notlösung, falls Yahoo keinen Titel liefert."""
     try:
         p = urlparse(link or "")
         slug = p.path.strip("/").split("/")[-1].replace("-", " ").strip()
@@ -147,12 +149,11 @@ def _fallback_title_from_link(link: str) -> str:
         return "News"
 
 def normalize_news_item(item: dict) -> dict:
-    link = item.get("link") or ""
-    title = (item.get("title") or "").strip()
+    """Robuste Felder (Titel, Link, Publisher, Zeit, Thumbnail) extrahieren."""
+    link = (item.get("link") or "").strip()
     if not link:
         return {}  # ohne Link unbrauchbar
-    if not title:
-        title = _fallback_title_from_link(link)
+    title = (item.get("title") or "").strip() or _fallback_title_from_link(link)
     publisher = (item.get("publisher") or "").strip()
     ts = item.get("providerPublishTime")
     ago = time_ago(ts) if ts else ""
@@ -166,29 +167,32 @@ def normalize_news_item(item: dict) -> dict:
     return {"title": title, "link": link, "publisher": publisher, "ago": ago, "thumb": thumb, "raw": item}
 
 def get_news(symbol: str, limit: int = 6) -> list[dict]:
-    """Probiert mehrere Proxies; gibt bereits normalisierte Items zurück (gefiltert)."""
+    """
+    Probiert mehrere Proxies nacheinander, filtert leere Items raus,
+    dedupliziert per Link und macht kurze Pausen (gegen Rate-Limits).
+    """
     proxies = NEWS_PROXY_CHAIN.get(symbol, [symbol])
     for p in proxies:
         try:
             t = yf.Ticker(p)
             raw = getattr(t, "news", None) or []
             items = []
-            for it in raw[:limit*2]:  # mehr ziehen, später filtern/deduplizieren
+            for it in raw[:limit * 2]:  # etwas mehr holen, später filtern
                 n = normalize_news_item(it)
-                if n and n["title"] and n["link"]:
+                if n and n.get("title") and n.get("link"):
                     items.append(n)
             if items:
-                # dedupe per link
-                seen = set()
-                deduped = []
+                # dedupe per Link
+                seen, deduped = set(), []
                 for n in items:
-                    if n["link"] in seen: 
+                    if n["link"] in seen:
                         continue
                     seen.add(n["link"])
                     deduped.append(n)
                 return deduped[:limit]
         except Exception:
-            continue
+            pass
+        time.sleep(0.2)  # sanfte Pause gegen Throttling
     return []
 
 def get_news_multi(symbols: list[str], per_symbol: int = 5) -> list[dict]:
@@ -200,71 +204,21 @@ def get_news_multi(symbols: list[str], per_symbol: int = 5) -> list[dict]:
                 continue
             seen.add(n["link"])
             n["sym"] = sym
-            n["ts"] = n["raw"].get("providerPublishTime") or 0
+            n["ts"] = n.get("raw", {}).get("providerPublishTime") or 0
             items.append(n)
     items.sort(key=lambda x: x["ts"], reverse=True)
     return items
 
+def fallback_news_links(sym: str) -> list[tuple[str, str]]:
+    """Klickbare Fallback-Links (Google News & Yahoo Finance) pro Symbol."""
+    return [
+        (f"🔎 Google News – {sym}", f"https://news.google.com/search?q={quote_plus(sym)}"),
+        (f"📰 Yahoo Finance – {sym}", f"https://finance.yahoo.com/quote/{quote_plus(sym)}/news"),
+    ]
 
 
-def time_ago(epoch_secs: float) -> str:
-    """Wandelt Unix-Sekunden in 'vor X min/h/t' um."""
-    try:
-        ts = dt.datetime.fromtimestamp(float(epoch_secs), tz=dt.timezone.utc)
-    except Exception:
-        return ""
-    now = dt.datetime.now(dt.timezone.utc)
-    delta = now - ts
-    s = int(delta.total_seconds())
-    if s < 60:
-        return "gerade eben"
-    m = s // 60
-    if m < 60:
-        return f"vor {m} min"
-    h = m // 60
-    if h < 24:
-        return f"vor {h} h"
-    d = h // 24
-    return f"vor {d} Tagen"
 
-def normalize_news_item(item: dict) -> dict:
-    """Extrahiert robuste Felder aus yfinance-News."""
-    title = item.get("title", "Ohne Titel")
-    link = item.get("link", "#")
-    publisher = item.get("publisher", "")
-    # providerPublishTime ist Unix (Sekunden)
-    ts = item.get("providerPublishTime")
-    ago = time_ago(ts) if ts else ""
-    # Thumbnail (optional; Struktur variiert)
-    thumb = None
-    try:
-        th = item.get("thumbnail") or {}
-        res = th.get("resolutions") or []
-        if res:
-            thumb = res[0].get("url")
-    except Exception:
-        pass
-    return {"title": title, "link": link, "publisher": publisher, "ago": ago, "thumb": thumb, "raw": item}
 
-def get_news_multi(symbols: list[str], per_symbol: int = 5) -> list[dict]:
-    """Holt News für mehrere Symbole (mit Proxy-Mapping) und sortiert sie nach Zeit absteigend."""
-    all_items = []
-    seen_links = set()
-    for sym in symbols:
-        for raw in get_news(sym, limit=per_symbol):
-            n = normalize_news_item(raw)
-            # Dedupe per Link
-            if n["link"] in seen_links:
-                continue
-            seen_links.add(n["link"])
-            # Zeit für Sortierung (Fallback: 0)
-            ts = raw.get("providerPublishTime") or 0
-            n["ts"] = ts
-            n["sym"] = sym
-            all_items.append(n)
-    # Neueste zuerst
-    all_items.sort(key=lambda x: x.get("ts", 0), reverse=True)
-    return all_items
 
 def to_scalar(x):
     if isinstance(x, (pd.Series, list, tuple, np.ndarray)):
