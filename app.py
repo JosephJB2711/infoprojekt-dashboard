@@ -532,7 +532,7 @@ with tab_charts:
             st.info("Keine Daten für Korrelation verfügbar.")
 
 # ---------- NEWS TAB ----------
-with tab_news:
+  with tab_news:
     st.subheader("📰 Markt-News & Analysen")
     st.caption("Bleib auf dem Laufenden mit den neuesten Finanz- und Wirtschaftsnachrichten.")
 
