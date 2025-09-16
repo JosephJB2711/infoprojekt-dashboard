@@ -533,7 +533,9 @@ with tab_charts:
 
 # ---------- NEWS TAB ----------
 with tab_news:
-    st.subheader("Aktuelle Nachrichten")
+    st.subheader("📰 Markt-News & Analysen")
+    st.caption("Bleib auf dem Laufenden mit den neuesten Finanz- und Wirtschaftsnachrichten.")
+
 
     mode = st.radio("Ansicht", ["Kombiniert (alle Symbole)", "Pro Symbol"], horizontal=True, key="news_mode")
     per_symbol = st.slider("Anzahl pro Symbol", 1, 10, 5, key="news_per_symbol")
