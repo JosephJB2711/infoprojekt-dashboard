@@ -535,6 +535,8 @@ with tab_charts:
 with tab_news:
     st.subheader("📰 Markt-News & Analysen")
     st.caption("Bleib auf dem Laufenden mit den neuesten Finanz- und Wirtschaftsnachrichten.")
+    st.markdown("<hr style='opacity:0.3'>", unsafe_allow_html=True)
+
 
 
     mode = st.radio("Ansicht", ["Kombiniert (alle Symbole)", "Pro Symbol"], horizontal=True, key="news_mode")
