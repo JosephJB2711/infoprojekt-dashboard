@@ -524,27 +524,93 @@ with tab_kpi:
 
     # feiner Trenner unten
     st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
-
 # ---------- CHARTS TAB ----------
 with tab_charts:
     # Optionen oberhalb der Unter-Tabs
     show_ma20  = st.checkbox("MA20 anzeigen", value=True,  key="opt_ma20")
     show_ma50  = st.checkbox("MA50 anzeigen", value=False, key="opt_ma50")
+    show_bb    = st.checkbox("Bollinger (20, 2σ)", value=False, key="opt_bb")
+    show_rsi   = st.checkbox("RSI(14)", value=False, key="opt_rsi")
     normalize  = st.checkbox("Verlauf auf 100 normieren", value=False, key="opt_norm")
 
     sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
 
-    # --- Verlauf (Plotly, MAs, Normalisierung, Slider) ---
+    # --- Verlauf (Plotly, MAs, BB, Normalisierung, Slider) ---
     with sub1:
         for sym, df in frames.items():
             if not has_close_data(df):
                 st.info(f"{sym}: Keine Daten für Verlauf.")
                 continue
+
+            # Basisdaten + MAs
+            d = add_mas(df)
+
+            # Optional Bollinger-Bänder
+            if show_bb:
+                d = add_bbands(d, window=20, n_std=2.0)
+
+            # Optional auf 100 normieren (alle gezeigten Linien)
+            if normalize and not d["Close"].dropna().empty:
+                base = d["Close"].dropna().iloc[0]
+                if base != 0:
+                    scale = 100.0 / base
+                    for col in ["Close", "MA20", "MA50", "BB_MID", "BB_UP", "BB_LOW"]:
+                        if col in d.columns:
+                            d[col] = d[col] * scale
+
+            # Preis/Indikator-Chart
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=d.index, y=d["Close"], mode="lines",
+                                     name=f"{sym} {'(Index=100)' if normalize else 'Close'}"))
+
+            if show_ma20 and "MA20" in d and d["MA20"].notna().any():
+                fig.add_trace(go.Scatter(x=d.index, y=d["MA20"], mode="lines", name="MA20"))
+            if show_ma50 and "MA50" in d and d["MA50"].notna().any():
+                fig.add_trace(go.Scatter(x=d.index, y=d["MA50"], mode="lines", name="MA50"))
+
+            # Bollinger-Bänder als Band (Upper zuerst, dann Lower mit Fill)
+            if show_bb and "BB_UP" in d and "BB_LOW" in d:
+                if d["BB_UP"].notna().any() and d["BB_LOW"].notna().any():
+                    fig.add_trace(go.Scatter(x=d.index, y=d["BB_UP"], mode="lines",
+                                             name="BB Upper", line=dict(width=0)))
+                    fig.add_trace(go.Scatter(x=d.index, y=d["BB_LOW"], mode="lines",
+                                             name="BB Lower", fill='tonexty',
+                                             line=dict(width=0), opacity=0.2))
+
+            fig.update_layout(
+                margin=dict(l=0, r=0, t=30, b=0),
+                legend=dict(orientation="h"),
+                hovermode="x unified",
+                xaxis=dict(
+                    rangeselector=dict(
+                        buttons=[
+                            dict(count=1, label="1M", step="month", stepmode="backward"),
+                            dict(count=3, label="3M", step="month", stepmode="backward"),
+                            dict(count=6, label="6M", step="month", stepmode="backward"),
+                            dict(step="all", label="All"),
+                        ]
+                    ),
+                    rangeslider=dict(visible=True),
+                    type="date",
+                ),
+            )
+
             st.markdown(f"**{sym}**")
-            fig = fig_with_mas(df, sym, show_ma20, show_ma50, normalize)
             st.plotly_chart(fig, use_container_width=True)
 
-    # --- Korrelation (robust via concat) ---
+            # RSI unterhalb (eigener kleiner Plot)
+            if show_rsi:
+                rsi = calc_rsi(df["Close"])
+                if rsi is not None and not rsi.dropna().empty:
+                    fig_rsi = go.Figure()
+                    fig_rsi.add_trace(go.Scatter(x=rsi.index, y=rsi, mode="lines", name="RSI(14)"))
+                    # Komfort-Zone 30-70
+                    fig_rsi.add_hrect(y0=30, y1=70, fillcolor="lightgray", opacity=0.2, line_width=0)
+                    fig_rsi.update_yaxes(range=[0, 100])
+                    fig_rsi.update_layout(margin=dict(l=0, r=0, t=10, b=0), height=160, showlegend=False)
+                    st.plotly_chart(fig_rsi, use_container_width=True)
+
+    # --- Korrelation als Heatmap (statt Tabelle) ---
     with sub2:
         series_list = []
         for sym, df in frames.items():
@@ -552,10 +618,14 @@ with tab_charts:
                 series_list.append(df["Close"].rename(sym))
         if series_list:
             merged = pd.concat(series_list, axis=1)
-            corr = merged.pct_change().corr().round(2)
-            st.dataframe(corr, use_container_width=True)
+            corr = merged.pct_change().corr()
+            fig_corr = px.imshow(corr.round(2), text_auto=True, aspect="auto",
+                                 title="Korrelationsmatrix (Daily Returns)")
+            fig_corr.update_layout(margin=dict(l=0, r=0, t=40, b=0))
+            st.plotly_chart(fig_corr, use_container_width=True)
         else:
             st.info("Keine Daten für Korrelation verfügbar.")
+
 
 # ---------- NEWS TAB ----------
 with tab_news:
