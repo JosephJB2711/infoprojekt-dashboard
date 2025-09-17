@@ -293,6 +293,30 @@ def has_close_data(df: pd.DataFrame) -> bool:
         return False
 
 # ——— Chart-Tools (MA, Plotly, Normalisierung) ———
+def add_bbands(df: pd.DataFrame, window: int = 20, n_std: float = 2.0) -> pd.DataFrame:
+    """Bollinger-Bänder auf Close (MID, UPPER, LOWER)."""
+    d = df.copy()
+    roll = d["Close"].rolling(window)
+    mid = roll.mean()
+    std = roll.std()
+    d["BB_MID"] = mid
+    d["BB_UP"]  = mid + n_std * std
+    d["BB_LOW"] = mid - n_std * std
+    return d
+
+def calc_rsi(close: pd.Series, period: int = 14) -> pd.Series:
+    """RSI(14) via EMA (robust, NaN-safe)."""
+    if close is None or close.dropna().empty:
+        return pd.Series(index=close.index if hasattr(close, "index") else None, dtype=float)
+    delta = close.diff()
+    up = pd.Series(np.where(delta > 0,  delta, 0.0), index=close.index)
+    down = pd.Series(np.where(delta < 0, -delta, 0.0), index=close.index)
+    roll_up = up.ewm(alpha=1/period, adjust=False).mean()
+    roll_down = down.ewm(alpha=1/period, adjust=False).mean()
+    rs = roll_up / (roll_down.replace(0, np.nan))
+    rsi = 100 - (100 / (1 + rs))
+    return rsi.clip(0, 100)
+
 def add_mas(df: pd.DataFrame):
     d = df.copy()
     d["MA20"] = d["Close"].rolling(20).mean()
