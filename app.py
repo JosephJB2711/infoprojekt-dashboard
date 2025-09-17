@@ -533,7 +533,8 @@ with tab_charts:
     show_rsi   = st.checkbox("RSI(14)", value=False, key="opt_rsi")
     normalize  = st.checkbox("Verlauf auf 100 normieren", value=False, key="opt_norm")
 
-    sub1, sub2 = st.tabs(["📉 Verlauf", "📊 Korrelation"])
+    # WICHTIG: hier WIRKLICH 3 Tabs erzeugen
+    sub1, sub2, sub3 = st.tabs(["📉 Verlauf", "📊 Korrelation", "🕯️ Candlesticks"])
 
     # --- Verlauf (Plotly, MAs, BB, Normalisierung, Slider) ---
     with sub1:
