@@ -628,29 +628,28 @@ with tab_charts:
             st.plotly_chart(fig_corr, use_container_width=True)
         else:
             st.info("Keine Daten für Korrelation verfügbar.")
-    # --- Candlesticks ---
-    with sub3:
-        for sym in symbols:
-            df = yf.download(sym, period=period_map[rng], interval="1d", auto_adjust=False, progress=False)
-            if df.empty:
-                st.info(f"{sym}: Keine Candlestick-Daten verfügbar.")
-                continue
-            st.markdown(f"**{sym}**")
-            fig = go.Figure(data=[go.Candlestick(
-                x=df.index,
-                open=df["Open"],
-                high=df["High"],
-                low=df["Low"],
-                close=df["Close"],
-                name="Candlesticks"
-            )])
-            fig.update_layout(
-                xaxis_rangeslider_visible=False,
-                margin=dict(l=0, r=0, t=30, b=0),
-                hovermode="x unified"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
+  # --- Candlesticks ---
+with sub3:
+    for sym in symbols:
+        df = yf.download(sym, period=period_map[rng], interval="1d", auto_adjust=False, progress=False)
+        if df.empty:
+            st.info(f"{sym}: Keine Candlestick-Daten verfügbar.")
+            continue
+        st.markdown(f"**{sym}**")
+        fig = go.Figure(data=[go.Candlestick(
+            x=df.index,
+            open=df["Open"],
+            high=df["High"],
+            low=df["Low"],
+            close=df["Close"],
+            name="Candlesticks"
+        )])
+        fig.update_layout(
+            xaxis_rangeslider_visible=False,
+            margin=dict(l=0, r=0, t=30, b=0),
+            hovermode="x unified"
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 # ---------- NEWS TAB ----------
 with tab_news:
