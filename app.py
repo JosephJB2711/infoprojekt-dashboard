@@ -532,6 +532,8 @@ with tab_charts:
     show_bb    = st.checkbox("Bollinger (20, 2σ)", value=False, key="opt_bb")
     show_rsi   = st.checkbox("RSI(14)", value=False, key="opt_rsi")
     normalize  = st.checkbox("Verlauf auf 100 normieren", value=False, key="opt_norm")
+    show_vol  = st.checkbox("Volumen unter Candles", value=True, key="opt_vol")
+
 
     # WICHTIG: hier WIRKLICH 3 Tabs erzeugen
     sub1, sub2, sub3 = st.tabs(["📉 Verlauf", "📊 Korrelation", "🕯️ Candlesticks"])
