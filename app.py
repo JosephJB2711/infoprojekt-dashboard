@@ -552,6 +552,18 @@ with tab_charts:
 
     # WICHTIG: hier WIRKLICH 3 Tabs erzeugen
     sub1, sub2, sub3, sub4 = st.tabs(["📉 Verlauf", "📊 Korrelation", "🕯️ Candlesticks", "📛 Performance"])
+# ---------- CHARTS TAB ----------
+with tab_charts:
+    # Optionen oberhalb der Unter-Tabs
+    show_ma20  = st.checkbox("MA20 anzeigen", value=True,  key="opt_ma20")
+    show_ma50  = st.checkbox("MA50 anzeigen", value=False, key="opt_ma50")
+    show_bb    = st.checkbox("Bollinger (20, 2σ)", value=False, key="opt_bb")
+    show_rsi   = st.checkbox("RSI(14)", value=False, key="opt_rsi")
+    normalize  = st.checkbox("Verlauf auf 100 normieren", value=False, key="opt_norm")
+
+    # WICHTIG: hier wirklich 4 Tabs erzeugen
+    sub1, sub2, sub3, sub4 = st.tabs(["📉 Verlauf", "📊 Korrelation", "🕯️ Candlesticks", "📛 Performance"])
+
     # --- Verlauf (Plotly, MAs, BB, Normalisierung, Slider) ---
     with sub1:
         for sym, df in frames.items():
@@ -621,7 +633,6 @@ with tab_charts:
                 if rsi is not None and not rsi.dropna().empty:
                     fig_rsi = go.Figure()
                     fig_rsi.add_trace(go.Scatter(x=rsi.index, y=rsi, mode="lines", name="RSI(14)"))
-                    # Komfort-Zone 30-70
                     fig_rsi.add_hrect(y0=30, y1=70, fillcolor="lightgray", opacity=0.2, line_width=0)
                     fig_rsi.update_yaxes(range=[0, 100])
                     fig_rsi.update_layout(margin=dict(l=0, r=0, t=10, b=0), height=160, showlegend=False)
@@ -642,60 +653,61 @@ with tab_charts:
             st.plotly_chart(fig_corr, use_container_width=True)
         else:
             st.info("Keine Daten für Korrelation verfügbar.")
-  # --- Candlesticks ---
+
+    # --- Candlesticks ---
     with sub3:
-      for sym in symbols:
-        df = yf.download(sym, period=period_map[rng], interval="1d", auto_adjust=False, progress=False)
-        if df.empty:
-            st.info(f"{sym}: Keine Candlestick-Daten verfügbar.")
-            continue
-        st.markdown(f"**{sym}**")
-        fig = go.Figure(data=[go.Candlestick(
-            x=df.index,
-            open=df["Open"],
-            high=df["High"],
-            low=df["Low"],
-            close=df["Close"],
-            name="Candlesticks"
-        )])
-        fig.update_layout(
-            xaxis_rangeslider_visible=False,
-            margin=dict(l=0, r=0, t=30, b=0),
-            hovermode="x unified"
-        )
-        st.plotly_chart(fig, use_container_width=True)
-# --- Performance (1T, 7T, 30T) als Gruppen-Barchart ---
-  with sub4:
-    rows = []
-    for sym, df in frames.items():
-        if not has_close_data(df):
-            continue
-        r_1d  = perf_pct(df, 0)   # ~ letzte 24h (letzter vs. vorheriger Close)
-        r_7d  = perf_pct(df, 7)
-        r_30d = perf_pct(df, 30)
-        rows.append({"Symbol": sym, "1T": r_1d, "7T": r_7d, "30T": r_30d})
+        for sym in symbols:
+            df = yf.download(sym, period=period_map[rng], interval="1d",
+                             auto_adjust=False, progress=False)
+            if df is None or df.empty:
+                st.info(f"{sym}: Keine Candlestick-Daten verfügbar.")
+                continue
 
-    if not rows:
-        st.info("Keine Daten für Performance verfügbar.")
-    else:
-        perf_df = pd.DataFrame(rows)
-        # Long-Format für gruppierte Balken
-        perf_long = perf_df.melt(id_vars="Symbol", var_name="Fenster", value_name="Rendite_%")
+            st.markdown(f"**{sym}**")
+            fig = go.Figure(data=[go.Candlestick(
+                x=df.index,
+                open=df["Open"],
+                high=df["High"],
+                low=df["Low"],
+                close=df["Close"],
+                name="Candlesticks"
+            )])
+            fig.update_layout(
+                xaxis_rangeslider_visible=False,
+                margin=dict(l=0, r=0, t=30, b=0),
+                hovermode="x unified"
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
-        import plotly.express as px  # falls noch nicht importiert
-        fig_perf = px.bar(
-            perf_long,
-            x="Symbol", y="Rendite_%", color="Fenster", barmode="group",
-            text="Rendite_%",
-            title="Performancevergleich (1T / 7T / 30T)"
-        )
-        # Schönere Labels / Prozentanzeige
-        fig_perf.update_traces(
-            texttemplate="%{y:.2f}%",
-            hovertemplate="<b>%{x}</b><br>%{legendgroup}: %{y:.2f}%<extra></extra>"
-        )
-        fig_perf.update_layout(margin=dict(l=0, r=0, t=40, b=0), legend=dict(orientation="h"))
-        st.plotly_chart(fig_perf, use_container_width=True)
+    # --- Performance (1T, 7T, 30T) als Gruppen-Barchart ---
+    with sub4:
+        rows = []
+        for sym, df in frames.items():
+            if not has_close_data(df):
+                continue
+            r_1d  = perf_pct(df, 0)   # ~ letzte 24h (letzter vs. vorheriger Close)
+            r_7d  = perf_pct(df, 7)
+            r_30d = perf_pct(df, 30)
+            rows.append({"Symbol": sym, "1T": r_1d, "7T": r_7d, "30T": r_30d})
+
+        if not rows:
+            st.info("Keine Daten für Performance verfügbar.")
+        else:
+            perf_df = pd.DataFrame(rows)
+            perf_long = perf_df.melt(id_vars="Symbol", var_name="Fenster", value_name="Rendite_%")
+            fig_perf = px.bar(
+                perf_long,
+                x="Symbol", y="Rendite_%", color="Fenster", barmode="group",
+                text="Rendite_%",
+                title="Performancevergleich (1T / 7T / 30T)"
+            )
+            fig_perf.update_traces(
+                texttemplate="%{y:.2f}%",
+                hovertemplate="<b>%{x}</b><br>%{legendgroup}: %{y:.2f}%<extra></extra>"
+            )
+            fig_perf.update_layout(margin=dict(l=0, r=0, t=40, b=0), legend=dict(orientation="h"))
+            st.plotly_chart(fig_perf, use_container_width=True)
+
 
 
 # ---------- NEWS TAB ----------
