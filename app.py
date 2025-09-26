@@ -643,8 +643,8 @@ with tab_charts:
         else:
             st.info("Keine Daten für Korrelation verfügbar.")
   # --- Candlesticks ---
-with sub3:
-    for sym in symbols:
+    with sub3:
+      for sym in symbols:
         df = yf.download(sym, period=period_map[rng], interval="1d", auto_adjust=False, progress=False)
         if df.empty:
             st.info(f"{sym}: Keine Candlestick-Daten verfügbar.")
