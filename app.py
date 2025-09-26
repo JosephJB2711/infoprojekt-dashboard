@@ -539,19 +539,7 @@ with tab_kpi:
 
     # feiner Trenner unten
     st.markdown("<hr style='opacity:0.2'>", unsafe_allow_html=True)
-# ---------- CHARTS TAB ----------
-with tab_charts:
-    # Optionen oberhalb der Unter-Tabs
-    show_ma20  = st.checkbox("MA20 anzeigen", value=True,  key="opt_ma20")
-    show_ma50  = st.checkbox("MA50 anzeigen", value=False, key="opt_ma50")
-    show_bb    = st.checkbox("Bollinger (20, 2σ)", value=False, key="opt_bb")
-    show_rsi   = st.checkbox("RSI(14)", value=False, key="opt_rsi")
-    normalize  = st.checkbox("Verlauf auf 100 normieren", value=False, key="opt_norm")
-    show_vol  = st.checkbox("Volumen unter Candles", value=True, key="opt_vol")
 
-
-    # WICHTIG: hier WIRKLICH 3 Tabs erzeugen
-    sub1, sub2, sub3, sub4 = st.tabs(["📉 Verlauf", "📊 Korrelation", "🕯️ Candlesticks", "📛 Performance"])
 # ---------- CHARTS TAB ----------
 with tab_charts:
     # Optionen oberhalb der Unter-Tabs
