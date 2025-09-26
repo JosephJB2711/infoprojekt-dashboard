@@ -664,6 +664,39 @@ with sub3:
             hovermode="x unified"
         )
         st.plotly_chart(fig, use_container_width=True)
+# --- Performance (1T, 7T, 30T) als Gruppen-Barchart ---
+with sub4:
+    rows = []
+    for sym, df in frames.items():
+        if not has_close_data(df):
+            continue
+        r_1d  = perf_pct(df, 0)   # ~ letzte 24h (letzter vs. vorheriger Close)
+        r_7d  = perf_pct(df, 7)
+        r_30d = perf_pct(df, 30)
+        rows.append({"Symbol": sym, "1T": r_1d, "7T": r_7d, "30T": r_30d})
+
+    if not rows:
+        st.info("Keine Daten für Performance verfügbar.")
+    else:
+        perf_df = pd.DataFrame(rows)
+        # Long-Format für gruppierte Balken
+        perf_long = perf_df.melt(id_vars="Symbol", var_name="Fenster", value_name="Rendite_%")
+
+        import plotly.express as px  # falls noch nicht importiert
+        fig_perf = px.bar(
+            perf_long,
+            x="Symbol", y="Rendite_%", color="Fenster", barmode="group",
+            text="Rendite_%",
+            title="Performancevergleich (1T / 7T / 30T)"
+        )
+        # Schönere Labels / Prozentanzeige
+        fig_perf.update_traces(
+            texttemplate="%{y:.2f}%",
+            hovertemplate="<b>%{x}</b><br>%{legendgroup}: %{y:.2f}%<extra></extra>"
+        )
+        fig_perf.update_layout(margin=dict(l=0, r=0, t=40, b=0), legend=dict(orientation="h"))
+        st.plotly_chart(fig_perf, use_container_width=True)
+
 
 # ---------- NEWS TAB ----------
 with tab_news:
