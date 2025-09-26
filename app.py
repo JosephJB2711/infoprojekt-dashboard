@@ -551,7 +551,7 @@ with tab_charts:
 
 
     # WICHTIG: hier WIRKLICH 3 Tabs erzeugen
-   sub1, sub2, sub3, sub4 = st.tabs(["📉 Verlauf", "📊 Korrelation", "🕯️ Candlesticks", "📛 Performance"])
+sub1, sub2, sub3, sub4 = st.tabs(["📉 Verlauf", "📊 Korrelation", "🕯️ Candlesticks", "📛 Performance"])
     # --- Verlauf (Plotly, MAs, BB, Normalisierung, Slider) ---
     with sub1:
         for sym, df in frames.items():
