@@ -665,7 +665,7 @@ with tab_charts:
         )
         st.plotly_chart(fig, use_container_width=True)
 # --- Performance (1T, 7T, 30T) als Gruppen-Barchart ---
-with sub4:
+  with sub4:
     rows = []
     for sym, df in frames.items():
         if not has_close_data(df):
