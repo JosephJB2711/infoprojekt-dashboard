@@ -114,20 +114,19 @@ NEWS_PROXY_CHAIN = {
     "AAPL": ["AAPL"], "TSLA": ["TSLA"], "NVDA": ["NVDA"],
 }
 def perf_pct(df: pd.DataFrame, days: int) -> float:
-    """Rendite in % über 'days' Tage. Robust bei kurzen Historien."""
     if df is None or df.empty or "Close" not in df.columns:
         return np.nan
     s = df["Close"].dropna()
     if s.size < 2:
         return np.nan
     if days <= 0:
-        # 1T als 'letzter vs. vorheriger'
         a, b = s.iloc[-1], s.iloc[-2]
         return (a / b - 1.0) * 100.0 if b else np.nan
     if s.size <= days:
         return np.nan
     a, b = s.iloc[-1], s.iloc[-1 - days]
     return (a / b - 1.0) * 100.0 if b else np.nan
+
 
 def time_ago(epoch_secs):
     try:
