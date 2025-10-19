@@ -177,7 +177,13 @@ def normalize_news_item(item):
         "thumb": thumb,
         "raw": item,
     }
-
+def _yfinance_news(symbol: str) -> list[dict]:
+    """Safely fetch the raw Yahoo Finance news list for a single symbol."""
+    try:
+        ticker = yf.Ticker(symbol)
+        return getattr(ticker, "news", None) or []
+    except Exception:
+        return []
 def get_news(symbol, limit=6):
     """Teste mehrere Proxies; filter/normalize/dedupe; vermeide KeyErrors."""
     proxies = NEWS_PROXY_CHAIN.get(symbol, [symbol])
