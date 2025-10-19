@@ -1,11 +1,16 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import yfinance as yf
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
 import datetime as dt
+import time
+from email.utils import parsedate_to_datetime
+from urllib.parse import parse_qs, quote_plus, urlparse, urlsplit
+from xml.etree import ElementTree as ET
+
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import requests
+import streamlit as st
+import yfinance as yf
 # -----------------------------------------------------------------------------
 # Grundkonfiguration
 # -----------------------------------------------------------------------------
@@ -96,9 +101,6 @@ if not symbols:
     st.info("Links etwas auswählen, z. B. **S&P 500 (^GSPC)** oder **Bitcoin (BTC-USD)**.")
     st.stop()
 # --- NEWS Utils (robust & defensiv) ---
-import time
-import datetime as dt
-from urllib.parse import urlparse, quote_plus
 
 NEWS_PROXY_CHAIN = {
     "^GSPC": ["SPY", "^GSPC"],
@@ -177,6 +179,86 @@ def normalize_news_item(item):
         "thumb": thumb,
         "raw": item,
     }
+
+
+def _normalize_google_link(link: str) -> str:
+    if not link:
+        return ""
+    try:
+        parsed = urlsplit(link)
+    except Exception:
+        return link
+
+    if "news.google.com" not in parsed.netloc:
+        return link
+
+    params = parse_qs(parsed.query)
+    target = params.get("url")
+    if target and target[0]:
+        return target[0]
+    return link
+
+
+def google_news_items(symbol: str, limit: int = 6) -> list[dict]:
+    """Fallback via Google News RSS feed (no API key required)."""
+    url = (
+        "https://news.google.com/rss/search?q="
+        f"{quote_plus(symbol)}&hl=de&gl=DE&ceid=DE:de"
+    )
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+    except requests.RequestException:
+        return []
+
+    try:
+        root = ET.fromstring(response.content)
+    except Exception:
+        return []
+
+    channel = root.find("channel") if root is not None else None
+    if channel is None:
+        return []
+
+    items: list[dict] = []
+    for node in channel.findall("item"):
+        title = (node.findtext("title") or "").strip()
+        link = _normalize_google_link((node.findtext("link") or "").strip())
+        if not title or not link:
+            continue
+
+        source = node.find("source")
+        publisher = source.text.strip() if source is not None and source.text else "Google News"
+
+        pub_date = node.findtext("pubDate")
+        ts = None
+        ago = ""
+        if pub_date:
+            try:
+                dt_obj = parsedate_to_datetime(pub_date)
+                if dt_obj.tzinfo is None:
+                    dt_obj = dt_obj.replace(tzinfo=dt.timezone.utc)
+                ts = int(dt_obj.timestamp())
+                ago = time_ago(ts)
+            except Exception:
+                ts = None
+                ago = ""
+
+        items.append(
+            {
+                "title": title,
+                "link": link,
+                "publisher": publisher,
+                "ago": ago,
+                "thumb": None,
+                "raw": {"providerPublishTime": ts},
+            }
+        )
+        if len(items) >= limit:
+            break
+
+    return items
+
 def _yfinance_news(symbol: str) -> list[dict]:
     """Safely fetch the raw Yahoo Finance news list for a single symbol."""
     try:
@@ -184,32 +266,38 @@ def _yfinance_news(symbol: str) -> list[dict]:
         return getattr(ticker, "news", None) or []
     except Exception:
         return []
+
+
 def get_news(symbol, limit=6):
     """Teste mehrere Proxies; filter/normalize/dedupe; vermeide KeyErrors."""
     proxies = NEWS_PROXY_CHAIN.get(symbol, [symbol])
     seen = set()
     out = []
-    for p in proxies:
-        try:
-            t = yf.Ticker(p)
-            raw = getattr(t, "news", None) or []
-        except Exception:
-            raw = []
-        for it in raw[:limit * 2]:
+    for proxy in proxies:
+        raw_items = _yfinance_news(proxy)
+        for it in raw_items[: limit * 2]:
             n = normalize_news_item(it)
             if not n:
                 continue
             link = (n.get("link") or "").strip()
             title = (n.get("title") or "").strip()
-            if not link or not title:
-                continue
-            if link in seen:
+            if not link or not title or link in seen:
                 continue
             seen.add(link)
             out.append(n)
             if len(out) >= limit:
                 return out
         time.sleep(0.2)  # sanfte Pause gg. Throttling
+    if len(out) < limit:
+        for alt in google_news_items(symbol, limit=limit):
+            link = (alt.get("link") or "").strip()
+            title = (alt.get("title") or "").strip()
+            if not link or not title or link in seen:
+                continue
+            seen.add(link)
+            out.append(alt)
+            if len(out) >= limit:
+                break
     return out
 
 def get_news_multi(symbols, per_symbol=5):
@@ -226,8 +314,6 @@ def get_news_multi(symbols, per_symbol=5):
             items.append(n)
     items.sort(key=lambda x: x.get("ts", 0), reverse=True)
     return items
-
-from urllib.parse import quote_plus  # sicherstellen, dass das importiert ist
 
 def fallback_news_links(sym: str) -> list[tuple[str, str]]:
     """Gibt (Label, URL)-Paare zurück – kein Rendering hier drin!"""
@@ -388,36 +474,6 @@ def fig_with_mas(df: pd.DataFrame, sym: str, show_ma20: bool, show_ma50: bool, n
     )
     return fig
 
-# ——— News mit Symbol-Mapping (bessere Trefferquote) ———
-_NEWS_PROXY = {
-    "^GSPC": "SPY",    # S&P 500 ETF
-    "^NDX":  "QQQ",    # Nasdaq 100 ETF
-    "EURUSD=X": "EURUSD=X",
-    "GBPUSD=X": "GBPUSD=X",
-    "JPY=X": "JPY=X",
-    "CHFUSD=X": "CHFUSD=X",
-    "GC=F": "GC=F",
-    "CL=F": "CL=F",
-    "BTC-USD": "BTC-USD",
-    "ETH-USD": "ETH-USD",
-    "AAPL": "AAPL",
-    "TSLA": "TSLA",
-    "NVDA": "NVDA",
-}
-
-def get_news(symbol: str, limit: int = 5):
-    """Hole Headlines; für Indizes auf liquide ETFs mappen, damit Yahoo-News etwas liefert."""
-    try:
-        proxy = _NEWS_PROXY.get(symbol, symbol)
-        t = yf.Ticker(proxy)
-        news = getattr(t, "news", None)
-        if not news:
-            return []
-        return news[:limit]
-    except Exception:
-        return []
-
-
 # -----------------------------------------------------------------------------
 # Daten laden (Cache) – robust, mit Wochenintervallen bei MAX
 # -----------------------------------------------------------------------------
@@ -425,11 +481,47 @@ def get_news(symbol: str, limit: int = 5):
 def load(symbols, period):
     out = {}
     for s in symbols:
-        df = yf.download(s, period=period, interval="1d", auto_adjust=True, progress=False, group_by="column")
+        df = yf.download(
+            s,
+            period=period,
+            interval="1d",
+            auto_adjust=True,
+            progress=False,
+            group_by="column",
+        )
         c = extract_close(df)
         if c is not None and not c.empty:
             out[s] = pd.DataFrame({"Close": c})
     return out
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_ohlc(symbol: str, period: str) -> pd.DataFrame:
+    """Load OHLC data once per symbol/period and flatten MultiIndex frames."""
+    try:
+        df = yf.download(
+            symbol,
+            period=period,
+            interval="1d",
+            auto_adjust=False,
+            progress=False,
+            group_by="column",
+        )
+    except Exception:
+        return pd.DataFrame()
+
+    if df is None or df.empty:
+        return pd.DataFrame()
+
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [level[0] if isinstance(level, tuple) else level for level in df.columns]
+
+    required = [col for col in ["Open", "High", "Low", "Close"] if col in df.columns]
+    if len(required) < 4:
+        return pd.DataFrame()
+
+    clean = df[required].dropna(how="any")
+    return clean
 
 
 frames = load(symbols, period_map[rng])
@@ -469,7 +561,12 @@ def volatility(df: pd.DataFrame, days: int = 30):
 # TABS: KPIs / CHARTS / NEWS
 # -----------------------------------------------------------------------------
 # --- Tabs ----------------------------------------------------------
-tab_kpi, tab_charts, tab_news = st.tabs(["📊 KPIs", "📈 Charts", "📰 News"])
+tab_kpi, tab_charts, tab_news, tab_project = st.tabs([
+    "📊 KPIs",
+    "📈 Charts",
+    "📰 News",
+    "🗂️ Projekt",
+])
 
 
 # ---------- KPI TAB ----------
@@ -650,25 +747,30 @@ with tab_charts:
     # --- Candlesticks ---
     with sub3:
         for sym in symbols:
-            df = yf.download(sym, period=period_map[rng], interval="1d",
-                             auto_adjust=False, progress=False)
-            if df is None or df.empty:
-                st.info(f"{sym}: Keine Candlestick-Daten verfügbar.")
+            df_ohlc = load_ohlc(sym, period_map[rng])
+            if df_ohlc is None or df_ohlc.empty:
+                st.info(
+                    f"{sym}: Keine Candlestick-Daten verfügbar (ggf. Proxy/Netzwerk prüfen)."
+                )
                 continue
 
             st.markdown(f"**{sym}**")
-            fig = go.Figure(data=[go.Candlestick(
-                x=df.index,
-                open=df["Open"],
-                high=df["High"],
-                low=df["Low"],
-                close=df["Close"],
-                name="Candlesticks"
-            )])
+            fig = go.Figure(
+                data=[
+                    go.Candlestick(
+                        x=df_ohlc.index,
+                        open=df_ohlc["Open"],
+                        high=df_ohlc["High"],
+                        low=df_ohlc["Low"],
+                        close=df_ohlc["Close"],
+                        name="Candlesticks",
+                    )
+                ]
+            )
             fig.update_layout(
                 xaxis_rangeslider_visible=False,
                 margin=dict(l=0, r=0, t=30, b=0),
-                hovermode="x unified"
+                hovermode="x unified",
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -773,6 +875,225 @@ with tab_news:
                 continue
             for n in items:
                 render_item(n, show_sym_tag=False)
+
+
+
+# ---------- PROJECT TAB ----------
+with tab_project:
+    st.subheader("🗂️ Projekt-Steuerung & Kommunikation")
+    st.caption(
+        "Nutze Projektmethoden, um dein InfoDashboard in 12 Tagen fertigzustellen und beeindruckend zu präsentieren."
+    )
+    st.markdown("<hr style='opacity:0.3'>", unsafe_allow_html=True)
+
+    st.markdown("### 🎯 SMART-Ziel")
+    st.markdown(
+        """
+        **Spezifisch:** Ein einsatzbereites Finanz-Dashboard mit KPIs, Charts und News, ergänzt um Projektkommunikationstools.
+
+        **Messbar:** Mindestens 4 Daten-Visualisierungen, 1 automatisierte News-Quelle, 1 Projektreport-Download und 1 neue Nutzerinteraktion.
+
+        **Akzeptiert:** Abgestimmt mit Stakeholdern (Mentor, Community, Recruiter).
+
+        **Realistisch:** Aufbauend auf Streamlit, yfinance und bestehenden Komponenten, zusätzliche Features sind leichtgewichtig.
+
+        **Terminiert:** Fertigstellung innerhalb der nächsten 12 Tage inkl. Review & Demo.
+        """
+    )
+
+    st.markdown("### 🛣️ Projektphasen")
+    phases = [
+        "1. **Vision & Scope** – Zielbild finalisieren, Stakeholder abholen",
+        "2. **Planung** – Deliverables, Ressourcen, Risks, Kommunikationsplan",
+        "3. **Umsetzung** – Features coden, Inhalte kuratieren, Qualität sichern",
+        "4. **Feedback-Loop** – Soll-Ist-Abgleich, Iterationen basierend auf Tests & Feedback",
+        "5. **Abschluss & Launch** – Demo, Dokumentation, LinkedIn-Post vorbereiten",
+    ]
+    st.markdown("\n".join(phases))
+
+    st.markdown("### 🗓️ 12-Tage Gantt-Plan")
+    today = dt.date.today()
+    gantt_data = pd.DataFrame(
+        [
+            {
+                "Phase": "Vision & Scope",
+                "Start": today,
+                "Ende": today + dt.timedelta(days=1),
+                "Owner": "Product Owner",
+            },
+            {
+                "Phase": "Planung",
+                "Start": today + dt.timedelta(days=1),
+                "Ende": today + dt.timedelta(days=3),
+                "Owner": "Projektleitung",
+            },
+            {
+                "Phase": "Umsetzung",
+                "Start": today + dt.timedelta(days=3),
+                "Ende": today + dt.timedelta(days=9),
+                "Owner": "Dev-Team",
+            },
+            {
+                "Phase": "Feedback-Loop",
+                "Start": today + dt.timedelta(days=5),
+                "Ende": today + dt.timedelta(days=10),
+                "Owner": "QA & Stakeholder",
+            },
+            {
+                "Phase": "Abschluss",
+                "Start": today + dt.timedelta(days=9),
+                "Ende": today + dt.timedelta(days=12),
+                "Owner": "Projektleitung",
+            },
+        ]
+    )
+    fig_gantt = px.timeline(
+        gantt_data,
+        x_start="Start",
+        x_end="Ende",
+        y="Phase",
+        color="Owner",
+        title="Fokus-Sprint zum Launch",
+    )
+    fig_gantt.update_yaxes(autorange="reversed")
+    fig_gantt.update_layout(margin=dict(l=0, r=0, t=40, b=0))
+    st.plotly_chart(fig_gantt, use_container_width=True)
+
+    st.markdown("### ⚠️ Risiko-Matrix")
+    risk_df = pd.DataFrame(
+        [
+            {
+                "Risiko": "API-Rate-Limits/Proxy-Blockaden",
+                "Eintritt": "Mittel",
+                "Auswirkung": "Hoch",
+                "Mitigation": "Caching, Fallback-Links, lokale CSV-Snapshots",
+            },
+            {
+                "Risiko": "Zeitüberschreitung",
+                "Eintritt": "Mittel",
+                "Auswirkung": "Mittel",
+                "Mitigation": "Daily Stand-up, klarer Scope & Kanban",
+            },
+            {
+                "Risiko": "Scope Creep",
+                "Eintritt": "Niedrig",
+                "Auswirkung": "Mittel",
+                "Mitigation": "Change-Log pflegen, Priorisierung mit Stakeholdern",
+            },
+            {
+                "Risiko": "Qualitätsprobleme",
+                "Eintritt": "Niedrig",
+                "Auswirkung": "Hoch",
+                "Mitigation": "Tests, Peer-Review, Demo-Checkliste",
+            },
+        ]
+    )
+    st.dataframe(risk_df, hide_index=True, use_container_width=True)
+
+    st.markdown("### 🗃️ Kanban Snapshot")
+    kanban = {
+        "To Do": [
+            "Projektstory für LinkedIn entwerfen",
+            "Newsletter-Kopie schreiben",
+            "Screenshot-Galerie vorbereiten",
+        ],
+        "In Progress": [
+            "Candlestick-Fix testen",
+            "Newsfeed-Proxy validieren",
+        ],
+        "Done": [
+            "KPI-Tab verfeinert",
+            "Projekt-Tab angelegt",
+        ],
+    }
+    col_todo, col_progress, col_done = st.columns(3)
+    for col, key in zip([col_todo, col_progress, col_done], kanban.keys()):
+        with col:
+            st.markdown(f"#### {key}")
+            for item in kanban[key]:
+                st.markdown(f"- {item}")
+
+    st.markdown("### 🤝 Stakeholderanalyse")
+    stakeholder_df = pd.DataFrame(
+        [
+            {
+                "Stakeholder": "Mentor / Dozent",
+                "Interesse": "Lernfortschritt, Präsentation",
+                "Einbindung": "Wöchentliche Demo & Feedback",
+            },
+            {
+                "Stakeholder": "Tech-Community",
+                "Interesse": "Best Practices teilen",
+                "Einbindung": "Blog-Post, Discord-Updates",
+            },
+            {
+                "Stakeholder": "Recruiter",
+                "Interesse": "Skills & Story",
+                "Einbindung": "LinkedIn-Showcase, Portfolio-Link",
+            },
+        ]
+    )
+    st.dataframe(stakeholder_df, hide_index=True, use_container_width=True)
+
+    st.markdown("### 🧭 RACI Matrix")
+    raci_df = pd.DataFrame(
+        [
+            {"Aufgabe": "Feature-Implementierung", "R": "Dev", "A": "Projektleitung", "C": "Mentor", "I": "Community"},
+            {"Aufgabe": "Qualitätssicherung", "R": "QA", "A": "Projektleitung", "C": "Dev", "I": "Stakeholder"},
+            {"Aufgabe": "Kommunikation & Updates", "R": "Projektleitung", "A": "Projektleitung", "C": "Mentor", "I": "Recruiter"},
+            {"Aufgabe": "Launch-Story", "R": "Marketing", "A": "Projektleitung", "C": "Dev", "I": "Community"},
+        ]
+    )
+    st.dataframe(raci_df, hide_index=True, use_container_width=True)
+
+    st.markdown("### 📨 Newsletter & Updates")
+    if "newsletter_signups" not in st.session_state:
+        st.session_state.newsletter_signups = []
+    with st.form("newsletter_form"):
+        email = st.text_input("E-Mail für Projekt-Updates")
+        submit = st.form_submit_button("Anmelden")
+    if submit:
+        if email:
+            st.session_state.newsletter_signups.append({"email": email, "timestamp": dt.datetime.utcnow()})
+            st.success("Danke! Du erhältst vor dem Launch ein Update.")
+        else:
+            st.warning("Bitte eine gültige E-Mail eintragen.")
+
+    st.markdown("### ❓ Projekt Q&A Bot")
+    faq_knowledge = [
+        ("ziel", "Das Ziel ist ein datengetriebenes Finanzdashboard mit Projektstory für dein Portfolio."),
+        ("umfang", "Der Scope umfasst KPIs, Charts, News, Projektplan und Kommunikationsfeatures."),
+        ("deadline", "Du hast 12 Tage – plane tägliche 60-Minuten-Sprints und ein Abschluss-Review."),
+        ("linkedin", "Nutze Screenshots und den Projektplan, um einen starken LinkedIn-Post zu erstellen."),
+        ("risiko", "Haupt-Risiken: Zeit, API-Limits, fehlendes Feedback. Mit Kanban & Fallbacks mitigieren."),
+    ]
+
+    if "qa_history" not in st.session_state:
+        st.session_state.qa_history = [
+            {
+                "role": "assistant",
+                "content": "Frag mich alles rund um Zielsetzung, Scope oder Launch deines Projekts!",
+            }
+        ]
+
+    for message in st.session_state.qa_history:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    user_question = st.chat_input("Welche Frage hast du zum Projekt?")
+    if user_question:
+        st.session_state.qa_history.append({"role": "user", "content": user_question})
+        with st.chat_message("user"):
+            st.markdown(user_question)
+        answer = "Dazu habe ich aktuell keine Details – formuliere deine Frage gern konkreter."
+        lower_q = user_question.lower()
+        for keyword, response in faq_knowledge:
+            if keyword in lower_q:
+                answer = response
+                break
+        st.session_state.qa_history.append({"role": "assistant", "content": answer})
+        with st.chat_message("assistant"):
+            st.markdown(answer)
 
 
 
