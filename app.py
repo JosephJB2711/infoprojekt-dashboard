@@ -1,6 +1,11 @@
 import datetime as dt
+import json
+import re
 import time
+from difflib import SequenceMatcher
 from email.utils import parsedate_to_datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Sequence, Set
 from urllib.parse import parse_qs, quote_plus, urlparse, urlsplit
 from xml.etree import ElementTree as ET
 
@@ -1060,15 +1065,147 @@ with tab_project:
             st.warning("Bitte eine gültige E-Mail eintragen.")
 
     st.markdown("### ❓ Projekt Q&A Bot")
-    faq_knowledge = [
-        ("ziel", "Das Ziel ist ein datengetriebenes Finanzdashboard mit Projektstory für dein Portfolio."),
-        ("umfang", "Der Scope umfasst KPIs, Charts, News, Projektplan und Kommunikationsfeatures."),
-        ("deadline", "Von Anfang September bis Ende November"),
-        ("Lebenslauf", "Dieses Projekt wird in mein Lebenslauf hochgeladen"),
-        ("risiko", "Haupt-Risiken: Zeit, API-Limits, fehlendes Feedback. Mit Kanban & Fallbacks mitigieren."),
-        ("Stakeholder-Analyse", "Eine Stakeholder-Analyse wurde mit Hilfe von Wissen erstellt aus einem Training von Ann-Kathrin Wirtz an der 86. young leaders Akademie"),
-        ("MA20", "MA20 ist der 20-tägige gleitende Durchschnitt, der den durchschnittlichen Schlusskurs der letzten 20 Handelstage berechnet und in der technischen Analyse zur Trendbestimmung verwendet wird."),
-    ]
+
+    def _tokenize(text: str) -> List[str]:
+        return re.findall(r"[a-z0-9äöüß]+", (text or "").lower())
+
+    def _normalize(text: str) -> str:
+        return " ".join(_tokenize(text))
+
+    def _score_match(question_tokens: Set[str], phrase_tokens: Set[str]) -> float:
+        if not question_tokens or not phrase_tokens:
+            return 0.0
+        overlap = len(question_tokens & phrase_tokens)
+        return overlap / len(phrase_tokens)
+
+    def resolve_faq_answer(question: str, knowledge_base: List[Dict[str, Sequence[str]]]) -> Optional[str]:
+        normalized_question = _normalize(question)
+        question_tokens = set(_tokenize(question))
+        best_answer: Optional[str] = None
+        best_score = 0.0
+
+        for entry in knowledge_base:
+            for phrase in entry.get("keywords", []):
+                phrase_tokens = set(_tokenize(phrase))
+                score = _score_match(question_tokens, phrase_tokens)
+                if score > best_score:
+                    best_score = score
+                    best_answer = entry.get("answer")
+
+        if best_answer and (best_score >= 0.6 or (best_score >= 0.4 and len(question_tokens) <= 3)):
+            return best_answer
+
+        best_ratio = 0.0
+        for entry in knowledge_base:
+            for phrase in entry.get("keywords", []):
+                ratio = SequenceMatcher(None, _normalize(phrase), normalized_question).ratio()
+                if ratio > best_ratio:
+                    best_ratio = ratio
+                    best_answer = entry.get("answer")
+
+        if best_answer and best_ratio >= 0.65:
+            return best_answer
+
+        return None
+
+    CUSTOM_FAQ_PATH = Path(__file__).resolve().parent / "assets" / "faq_custom.json"
+
+    def _load_custom_faq_entries() -> List[Dict[str, Sequence[str]]]:
+        """Lädt optionale FAQ-Einträge aus assets/faq_custom.json."""
+        if not CUSTOM_FAQ_PATH.exists():
+            return []
+
+        try:
+            with CUSTOM_FAQ_PATH.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except Exception:
+            return []
+
+        entries: List[Dict[str, Sequence[str]]] = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+
+            keywords = item.get("keywords")
+            answer = item.get("answer")
+            if not answer or not keywords:
+                continue
+
+            if isinstance(keywords, str):
+                keywords = [keywords]
+
+            cleaned_keywords = []
+            for keyword in keywords:
+                if isinstance(keyword, str):
+                    normalized_keyword = keyword.strip()
+                    if normalized_keyword:
+                        cleaned_keywords.append(normalized_keyword)
+
+            if not cleaned_keywords:
+                continue
+
+            entries.append({
+                "keywords": cleaned_keywords,
+                "answer": str(answer).strip(),
+            })
+
+        return entries
+
+    # Neue Antworten können direkt unten ergänzt oder in assets/faq_custom.json hinterlegt werden.
+    faq_knowledge: List[Dict[str, Sequence[str]]] = [
+        {
+            "keywords": ["ziel", "projektziel", "smart ziel"],
+            "answer": "Das Ziel ist ein datengetriebenes Finanzdashboard mit Projektstory für dein Portfolio.",
+        },
+        {
+            "keywords": ["umfang", "scope", "features"],
+            "answer": "Der Scope umfasst KPIs, Charts, News, Projektplan, Kommunikationsfeatures und Dokumentation.",
+        },
+        {
+            "keywords": ["deadline", "zeitplan", "12 tage"],
+            "answer": "Du hast 12 Tage – plane tägliche 60-Minuten-Sprints und ein Abschluss-Review.",
+        },
+        {
+            "keywords": ["linkedin", "lebenslauf", "portfolio"],
+            "answer": "Nutze Screenshots, die SMART-Story und den Projektplan für LinkedIn oder den Lebenslauf.",
+        },
+        {
+            "keywords": ["risiko", "risk", "risikomatrix"],
+            "answer": "Haupt-Risiken: Zeit, API-Limits, fehlendes Feedback – mit Kanban, Backups und Fallback-News mitigieren.",
+        },
+        {
+            "keywords": ["bollinger", "bollinger bänder"],
+            "answer": "Bollinger-Bänder zeigen ein Mittelband (MA20) plus/minus zwei Standardabweichungen und markieren mögliche Überkauft-/Überverkauft-Zonen.",
+        },
+        {
+            "keywords": ["rsi", "relative strength index", "rsi(14)"],
+            "answer": "RSI(14) misst das Momentum aus 14 Perioden. Werte über 70 gelten als überkauft, unter 30 als überverkauft.",
+        },
+        {
+            "keywords": ["normieren", "index 100", "normalisierung"],
+            "answer": "Beim Normieren auf 100 wird der erste Kurswert auf 100 gesetzt, damit sich mehrere Assets prozentual vergleichen lassen.",
+        },
+        {
+            "keywords": ["kanban", "board", "todo"],
+            "answer": "Das Kanban-Board zeigt Aufgaben nach Status (To Do, In Progress, Done) und hält den Flow im Blick.",
+        },
+        {
+            "keywords": ["gantt", "zeitplan", "meilenstein"],
+            "answer": "Das Gantt-Chart visualisiert die Projektphasen: Ziele, Planung, Umsetzung, Review und Abschluss.",
+        },
+        {
+            "keywords": ["stakeholder", "analyse", "interessen"],
+            "answer": "Die Stakeholderanalyse mappt Mentor, Community und Recruiter auf Interesse und Einbindung.",
+        },
+        {
+            "keywords": ["raci", "verantwortung", "rollen"],
+            "answer": "Die RACI-Matrix klärt Verantwortungen: Responsible, Accountable, Consulted und Informed pro Aufgabe.",
+        },
+        {
+            "keywords": ["newsletter", "update", "email"],
+            "answer": "Über das Newsletter-Formular sammelst du E-Mails, um vor dem Launch ein Update zu verschicken.",
+        },
+    ] + _load_custom_faq_entries()
 
     if "qa_history" not in st.session_state:
         st.session_state.qa_history = [
@@ -1087,12 +1224,13 @@ with tab_project:
         st.session_state.qa_history.append({"role": "user", "content": user_question})
         with st.chat_message("user"):
             st.markdown(user_question)
-        answer = "Dazu habe ich aktuell keine Details – formuliere deine Frage gern konkreter."
-        lower_q = user_question.lower()
-        for keyword, response in faq_knowledge:
-            if keyword in lower_q:
-                answer = response
-                break
+
+        resolved = resolve_faq_answer(user_question, faq_knowledge)
+        answer = (
+            resolved
+            or "Dazu habe ich aktuell keine Details – ergänze gern neue Knowledge-Keywords oberhalb im Code."
+        )
+
         st.session_state.qa_history.append({"role": "assistant", "content": answer})
         with st.chat_message("assistant"):
             st.markdown(answer)
