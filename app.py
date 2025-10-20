@@ -1063,9 +1063,11 @@ with tab_project:
     faq_knowledge = [
         ("ziel", "Das Ziel ist ein datengetriebenes Finanzdashboard mit Projektstory für dein Portfolio."),
         ("umfang", "Der Scope umfasst KPIs, Charts, News, Projektplan und Kommunikationsfeatures."),
-        ("deadline", "Du hast 12 Tage – plane tägliche 60-Minuten-Sprints und ein Abschluss-Review."),
-        ("linkedin", "Nutze Screenshots und den Projektplan, um einen starken LinkedIn-Post zu erstellen."),
+        ("deadline", "Von Anfang September bis Ende November"),
+        ("Lebenslauf", "Dieses Projekt wird in mein Lebenslauf hochgeladen"),
         ("risiko", "Haupt-Risiken: Zeit, API-Limits, fehlendes Feedback. Mit Kanban & Fallbacks mitigieren."),
+        ("Stakeholder-Analyse", "Eine Stakeholder-Analyse wurde mit Hilfe von Wissen erstellt aus einem Training von Ann-Kathrin Wirtz an der 86. young leaders Akademie"),
+        ("MA20", "MA20 ist der 20-tägige gleitende Durchschnitt, der den durchschnittlichen Schlusskurs der letzten 20 Handelstage berechnet und in der technischen Analyse zur Trendbestimmung verwendet wird."),
     ]
 
     if "qa_history" not in st.session_state:
