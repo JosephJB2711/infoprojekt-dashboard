@@ -1,8 +1,10 @@
 import datetime as dt
+import json
 import re
 import time
 from difflib import SequenceMatcher
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set
 from urllib.parse import parse_qs, quote_plus, urlparse, urlsplit
 from xml.etree import ElementTree as ET
@@ -1106,7 +1108,50 @@ with tab_project:
 
         return None
 
-    # Neue Antworten können hinzugefügt werden, indem weitere Dicts mit "keywords" und "answer" ergänzt werden.
+    CUSTOM_FAQ_PATH = Path(__file__).resolve().parent / "assets" / "faq_custom.json"
+
+    def _load_custom_faq_entries() -> List[Dict[str, Sequence[str]]]:
+        """Lädt optionale FAQ-Einträge aus assets/faq_custom.json."""
+        if not CUSTOM_FAQ_PATH.exists():
+            return []
+
+        try:
+            with CUSTOM_FAQ_PATH.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except Exception:
+            return []
+
+        entries: List[Dict[str, Sequence[str]]] = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+
+            keywords = item.get("keywords")
+            answer = item.get("answer")
+            if not answer or not keywords:
+                continue
+
+            if isinstance(keywords, str):
+                keywords = [keywords]
+
+            cleaned_keywords = []
+            for keyword in keywords:
+                if isinstance(keyword, str):
+                    normalized_keyword = keyword.strip()
+                    if normalized_keyword:
+                        cleaned_keywords.append(normalized_keyword)
+
+            if not cleaned_keywords:
+                continue
+
+            entries.append({
+                "keywords": cleaned_keywords,
+                "answer": str(answer).strip(),
+            })
+
+        return entries
+
+    # Neue Antworten können direkt unten ergänzt oder in assets/faq_custom.json hinterlegt werden.
     faq_knowledge: List[Dict[str, Sequence[str]]] = [
         {
             "keywords": ["ziel", "projektziel", "smart ziel"],
@@ -1160,7 +1205,7 @@ with tab_project:
             "keywords": ["newsletter", "update", "email"],
             "answer": "Über das Newsletter-Formular sammelst du E-Mails, um vor dem Launch ein Update zu verschicken.",
         },
-    ]
+    ] + _load_custom_faq_entries()
 
     if "qa_history" not in st.session_state:
         st.session_state.qa_history = [
