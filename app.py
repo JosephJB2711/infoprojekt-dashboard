@@ -1163,7 +1163,7 @@ with tab_project:
         },
         {
             "keywords": ["deadline", "zeitplan", "12 tage"],
-            "answer": "Du hast 12 Tage – plane tägliche 60-Minuten-Sprints und ein Abschluss-Review.",
+            "answer": "Von Anfang September bis Ende Oktober",
         },
         {
             "keywords": ["linkedin", "lebenslauf", "portfolio"],
@@ -1204,6 +1204,10 @@ with tab_project:
         {
             "keywords": ["newsletter", "update", "email"],
             "answer": "Über das Newsletter-Formular sammelst du E-Mails, um vor dem Launch ein Update zu verschicken.",
+        },
+         {
+            "keywords": ["ma20", "MA20", "Ma20"],
+            "answer": "MA20 ist der gleitende Durchschnitt der letzten 20 Handelstage, häufig genutzt, um kurzfristige Trends in Aktien zu erkennen.",
         },
     ] + _load_custom_faq_entries()
 
