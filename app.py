@@ -887,7 +887,7 @@ with tab_news:
 with tab_project:
     st.subheader("🗂️ Projekt-Steuerung & Kommunikation")
     st.caption(
-        "Nutze Projektmethoden, um dein InfoDashboard in 12 Tagen fertigzustellen und beeindruckend zu präsentieren."
+        "Nutze Projektmethoden, um mein InfoDashboard fertigzustellen und mein Projekt erklären zu können."
     )
     st.markdown("<hr style='opacity:0.3'>", unsafe_allow_html=True)
 
@@ -916,7 +916,7 @@ with tab_project:
     ]
     st.markdown("\n".join(phases))
 
-    st.markdown("### 🗓️ 12-Tage Gantt-Plan")
+    st.markdown("### 🗓️ Gantt-Plan")
     today = dt.date.today()
     gantt_data = pd.DataFrame(
         [
