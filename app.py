@@ -1209,6 +1209,10 @@ with tab_project:
             "keywords": ["ma20", "MA20", "Ma20"],
             "answer": "MA20 ist der gleitende Durchschnitt der letzten 20 Handelstage, häufig genutzt, um kurzfristige Trends in Aktien zu erkennen.",
         },
+        {
+            "keywords": ["ma50", "MA50", "Ma50"],
+            "answer": "MA steht für „Moving Averages“, zu Deutsch „gleitende Durchschnitte“. Die 50 Tagelinie ist ein Indikator, der den Durchschnitt der letzten 50 Handelstage berücksichtigt.",
+        },
     ] + _load_custom_faq_entries()
 
     if "qa_history" not in st.session_state:
