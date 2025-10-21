@@ -1162,12 +1162,12 @@ with tab_project:
             "answer": "Der Scope umfasst KPIs, Charts, News, Projektplan, Kommunikationsfeatures und Dokumentation.",
         },
         {
-            "keywords": ["deadline", "zeitplan", "12 tage"],
+            "keywords": ["deadline", "zeitplan", "dauer"],
             "answer": "Von Anfang September bis Ende Oktober",
         },
         {
             "keywords": ["linkedin", "lebenslauf", "portfolio"],
-            "answer": "Nutze Screenshots, die SMART-Story und den Projektplan für LinkedIn oder den Lebenslauf.",
+            "answer": "Ich habe dieses Projekt in mein Lebenslauf hinzugefügt",
         },
         {
             "keywords": ["risiko", "risk", "risikomatrix"],
@@ -1212,6 +1212,10 @@ with tab_project:
         {
             "keywords": ["ma50", "MA50", "Ma50"],
             "answer": "MA steht für „Moving Averages“, zu Deutsch „gleitende Durchschnitte“. Die 50 Tagelinie ist ein Indikator, der den Durchschnitt der letzten 50 Handelstage berücksichtigt.",
+        },
+        {
+            "keywords": ["candlesticks", "Candlesticks", "Kerzencharts"],
+            "answer": "Candlesticks, auch Kerzencharts genannt, sind eine visuelle Darstellung der Kursbewegungen eines Assets innerhalb eines bestimmten Zeitraums. Sie bestehen aus einem Kerzenkörper, der den Eröffnungs- und Schlusskurs zeigt, sowie Dochten, die die Höchst- und Tiefstkurse repräsentieren. ",
         },
     ] + _load_custom_faq_entries()
 
