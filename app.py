@@ -1155,7 +1155,7 @@ with tab_project:
     faq_knowledge: List[Dict[str, Sequence[str]]] = [
         {
             "keywords": ["Zielsetzung", "projektziel", "smart ziel"],
-            "answer": "Das Ziel ist ein datengetriebenes Finanzdashboard mit Projektstory für dein Portfolio.",
+            "answer": "Das Ziel ist ein datengetriebenes Finanzdashboard mit Projektstory für mein Portfolio.",
         },
         {
             "keywords": ["umfang", "scope", "features"],
@@ -1167,7 +1167,7 @@ with tab_project:
         },
         {
             "keywords": ["Launch", "lebenslauf", "portfolio"],
-            "answer": "Ich habe dieses Projekt in mein Lebenslauf hinzugefügt",
+            "answer": "Der Launch des Projektes brachte zwar paar Probleme ein doch sie konnten letztendlich geklärt werden.",
         },
         {
             "keywords": ["risiko", "risk", "risikomatrix"],
