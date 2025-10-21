@@ -1166,7 +1166,7 @@ with tab_project:
             "answer": "Von Anfang September bis Ende Oktober",
         },
         {
-            "keywords": ["linkedin", "lebenslauf", "portfolio"],
+            "keywords": ["Launch", "lebenslauf", "portfolio"],
             "answer": "Ich habe dieses Projekt in mein Lebenslauf hinzugefügt",
         },
         {
