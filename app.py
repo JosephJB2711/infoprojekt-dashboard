@@ -1217,6 +1217,14 @@ with tab_project:
             "keywords": ["candlesticks", "Candlesticks", "Kerzencharts"],
             "answer": "Candlesticks, auch Kerzencharts genannt, sind eine visuelle Darstellung der Kursbewegungen eines Assets innerhalb eines bestimmten Zeitraums. Sie bestehen aus einem Kerzenkörper, der den Eröffnungs- und Schlusskurs zeigt, sowie Dochten, die die Höchst- und Tiefstkurse repräsentieren. ",
         },
+        {
+            "keywords": ["KPI", "KPIs", "kpi"],
+            "answer": "KPIs bei Aktien sind Kennzahlen, die die finanzielle Leistung, Bewertung und Erfolg eines Unternehmens messen, z.B. KGV, Umsatz, Gewinn, Dividendenrendite, Eigenkapitalquote und Verschuldungsgrad. ",
+        },
+        {
+            "keywords": ["KPI", "KPIs", "kpi"],
+            "answer": "Die Performance misst die Wertentwicklung eines Investments oder eines Portfolios. Meist wird zum Vergleich ein sogenannter Benchmark als Referenz genommen, um die Performance im Vergleich zum Gesamtmarkt oder zu den Branchen darzustellen. Die Performance wird in Prozent ermittelt.",
+        },    
     ] + _load_custom_faq_entries()
 
     if "qa_history" not in st.session_state:
