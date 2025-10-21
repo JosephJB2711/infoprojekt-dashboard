@@ -1222,9 +1222,22 @@ with tab_project:
             "answer": "KPIs bei Aktien sind Kennzahlen, die die finanzielle Leistung, Bewertung und Erfolg eines Unternehmens messen, z.B. KGV, Umsatz, Gewinn, Dividendenrendite, Eigenkapitalquote und Verschuldungsgrad. ",
         },
         {
-            "keywords": ["KPI", "KPIs", "kpi"],
+            "keywords": ["Performance", "performance", "Periodenrendite"],
             "answer": "Die Performance misst die Wertentwicklung eines Investments oder eines Portfolios. Meist wird zum Vergleich ein sogenannter Benchmark als Referenz genommen, um die Performance im Vergleich zum Gesamtmarkt oder zu den Branchen darzustellen. Die Performance wird in Prozent ermittelt.",
-        },    
+        },  
+        {
+            "keywords": ["assets", "Assets", "asset"],
+            "answer": "Assets sind in der Wirtschaft Vermögenswerte, Anlagevermögen oder Kapitalanlagen, aber auch Immobilien und Güter sowie Kompetenzen und Vermögensgegenstände. An der Börse und im Fondsmanagement steht der Begriff Asset für Fondsvermögen, Aktien und Kapitalanlagen.",
+        },
+        {
+            "keywords": ["presets", "Presets", "preset"],
+            "answer": "Presets bei Aktien sind vordefinierte Einstellungen oder Konfigurationen, die beim Handel oder bei der Analyse von Aktien verwendet werden, um bestimmte Handelsstrategien oder Analysemethoden schnell anzuwenden.",
+        },
+        {
+            "keywords": ["korrelation", "Korrelationsmatrix", "korrelationsmatrix"],
+            "answer": "Eine Korrelationsmatrix ist eine symmetrische, positiv semidefinite Matrix, die die Korrelationen zwischen Komponenten eines Zufallsvektors erfasst. Sie zeigt die Stärke und Richtung der Beziehungen zwischen Variablen an und kann aus der Varianz-Kovarianzmatrix abgeleitet werden.",
+        },
+        
     ] + _load_custom_faq_entries()
 
     if "qa_history" not in st.session_state:
