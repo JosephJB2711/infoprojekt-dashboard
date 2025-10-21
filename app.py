@@ -1154,7 +1154,7 @@ with tab_project:
     # Neue Antworten können direkt unten ergänzt oder in assets/faq_custom.json hinterlegt werden.
     faq_knowledge: List[Dict[str, Sequence[str]]] = [
         {
-            "keywords": ["ziel", "projektziel", "smart ziel"],
+            "keywords": ["Zielsetzung", "projektziel", "smart ziel"],
             "answer": "Das Ziel ist ein datengetriebenes Finanzdashboard mit Projektstory für dein Portfolio.",
         },
         {
