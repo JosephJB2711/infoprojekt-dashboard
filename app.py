@@ -1166,10 +1166,10 @@ with tab_project:
             "keywords": ["deadline", "zeitplan", "dauer"],
             "answer": "Von Anfang September bis Ende Oktober",
         },
-        {
-            "keywords": ["Launch", "lebenslauf", "portfolio"],
-            "answer": "Der Launch des Projektes brachte zwar paar Probleme ein doch sie konnten letztendlich geklärt werden.",
+        {   "keywords":["Launch","lebenslauf","portfolio"],
+            "answer":"Das Projekt ist als Portfolio-Showcase gedacht; Ergebnisse und Code sind im Dashboard dokumentiert."
         },
+
         {
             "keywords": ["risiko", "risk", "risikomatrix"],
             "answer": "Haupt-Risiken: Zeit, API-Limits, fehlendes Feedback – mit Kanban, Backups und Fallback-News mitigieren.",
