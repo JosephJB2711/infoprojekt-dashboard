@@ -887,32 +887,32 @@ with tab_news:
 with tab_project:
     st.subheader("🗂️ Projekt-Steuerung & Kommunikation")
     st.caption(
-        "Nutze Projektmethoden, um mein InfoDashboard fertigzustellen und mein Projekt erklären zu können."
+        "Nutze einfache Projektmethoden, um mein InfoDashboard sauber fertigzustellen und mein Vorgehen nachvollziehbar zu dokumentieren."
     )
     st.markdown("<hr style='opacity:0.3'>", unsafe_allow_html=True)
 
     st.markdown("### 🎯 SMART-Ziel")
     st.markdown(
         """
-        **Spezifisch:** Ein einsatzbereites Finanz-Dashboard mit KPIs, Charts und News, ergänzt um Projektkommunikationstools.
+        **Spezifisch:** Ein einsatzbereites Finanz-Dashboard mit KPIs, Charts und News sowie einem kurzen Projektreport („Vorgehen & Planung“). E-Mail-Elemente sind reine Deko.
 
-        **Messbar:** Mindestens 4 Daten-Visualisierungen, 1 automatisierte News-Quelle, 1 Projektreport-Download und 1 neue Nutzerinteraktion.
+        **Messbar:** ≥4 Daten-Visualisierungen, 1 automatisierte News-Quelle, 1 Projektreport-Download, 1 Nutzerinteraktion (z. B. Ticker-Suche).
 
-        **Akzeptiert:** Abgestimmt mit Stakeholdern (Mentor, Community, Recruiter).
+        **Akzeptiert:** Solo-Projekt; Feedback durch Reviewer (Lehrkraft/Mentor) und Pilot-User (Familie/Freunde); Zielpublikum: Recruiter/Praktika.
 
-        **Realistisch:** Aufbauend auf Streamlit, yfinance und bestehenden Komponenten, zusätzliche Features sind leichtgewichtig.
+        **Realistisch:** Aufbauend auf Streamlit, yfinance und bestehenden Komponenten; Q&A-Bot leichtgewichtig, Code verständlich und nicht unnötig komplex.
 
-        **Terminiert:** Fertigstellung innerhalb der nächsten 12 Tage inkl. Review & Demo.
+        **Terminiert:** Projektzeitraum 01.09.2025–31.10.2025; Fokus-Finalisierung in den letzten 12 Tagen (Feinschliff, Dokumentation, Bot-Feintuning).
         """
     )
 
     st.markdown("### 🛣️ Projektphasen")
     phases = [
-        "1. **Vision & Scope** – Zielbild finalisieren, Stakeholder abholen",
-        "2. **Planung** – Deliverables, Ressourcen, Risks, Kommunikationsplan",
-        "3. **Umsetzung** – Features coden, Inhalte kuratieren, Qualität sichern",
-        "4. **Feedback-Loop** – Soll-Ist-Abgleich, Iterationen basierend auf Tests & Feedback",
-        "5. **Abschluss & Launch** – Demo, Dokumentation, LinkedIn-Post vorbereiten",
+        "1. **Vision & Scope** – Zielbild schärfen, Umfang abgrenzen (keine Logins/DB, E-Mail nur Deko)",
+        "2. **Planung** – Deliverables & Abnahmekriterien definieren, Risiken & Fallbacks festlegen",
+        "3. **Umsetzung** – Features coden (Charts, News, Interaktion), Inhalte kuratieren, Qualität sichern",
+        "4. **Feedback-Loop** – Tests mit Pilot-Usern, Reviewer-Feedback einarbeiten",
+        "5. **Abschluss & Launch** – Projektreport, Demo vorbereiten, CV/Portfolio-Showcase",
     ]
     st.markdown("\n".join(phases))
 
@@ -924,31 +924,31 @@ with tab_project:
                 "Phase": "Vision & Scope",
                 "Start": today,
                 "Ende": today + dt.timedelta(days=1),
-                "Owner": "Product Owner",
+                "Owner": "Du (Product Owner)",
             },
             {
                 "Phase": "Planung",
                 "Start": today + dt.timedelta(days=1),
                 "Ende": today + dt.timedelta(days=3),
-                "Owner": "Projektleitung",
+                "Owner": "Du (Projektleitung)",
             },
             {
                 "Phase": "Umsetzung",
                 "Start": today + dt.timedelta(days=3),
                 "Ende": today + dt.timedelta(days=9),
-                "Owner": "Dev-Team",
+                "Owner": "Du (Dev)",
             },
             {
                 "Phase": "Feedback-Loop",
                 "Start": today + dt.timedelta(days=5),
                 "Ende": today + dt.timedelta(days=10),
-                "Owner": "QA & Stakeholder",
+                "Owner": "Pilot-User & Reviewer",
             },
             {
                 "Phase": "Abschluss",
                 "Start": today + dt.timedelta(days=9),
                 "Ende": today + dt.timedelta(days=12),
-                "Owner": "Projektleitung",
+                "Owner": "Du (Projektleitung)",
             },
         ]
     )
@@ -958,7 +958,7 @@ with tab_project:
         x_end="Ende",
         y="Phase",
         color="Owner",
-        title="Fokus-Sprint zum Launch",
+        title="Projektzeitraum Sep–Okt 2025 – Fokus-Finalisierung in den letzten 12 Tagen",
     )
     fig_gantt.update_yaxes(autorange="reversed")
     fig_gantt.update_layout(margin=dict(l=0, r=0, t=40, b=0))
@@ -971,25 +971,25 @@ with tab_project:
                 "Risiko": "API-Rate-Limits/Proxy-Blockaden",
                 "Eintritt": "Mittel",
                 "Auswirkung": "Hoch",
-                "Mitigation": "Caching, Fallback-Links, lokale CSV-Snapshots",
+                "Mitigation": "Caching (TTL), manueller Refresh, Fallback auf lokale CSV-Snapshots",
             },
             {
                 "Risiko": "Zeitüberschreitung",
                 "Eintritt": "Mittel",
                 "Auswirkung": "Mittel",
-                "Mitigation": "Daily Stand-up, klarer Scope & Kanban",
+                "Mitigation": "Must-haves vor Nice-to-haves, Tagesziele, Kanban",
             },
             {
                 "Risiko": "Scope Creep",
                 "Eintritt": "Niedrig",
                 "Auswirkung": "Mittel",
-                "Mitigation": "Change-Log pflegen, Priorisierung mit Stakeholdern",
+                "Mitigation": "Klare Abgrenzung & Change-Log, Priorisierung mit mir selbst",
             },
             {
-                "Risiko": "Qualitätsprobleme",
+                "Risiko": "Datenqualität/Aktualität",
                 "Eintritt": "Niedrig",
                 "Auswirkung": "Hoch",
-                "Mitigation": "Tests, Peer-Review, Demo-Checkliste",
+                "Mitigation": "Zeitstempel & Quelle anzeigen, Warnhinweise bei alten Daten",
             },
         ]
     )
@@ -998,9 +998,9 @@ with tab_project:
     st.markdown("### 🗃️ Kanban Snapshot")
     kanban = {
         "To Do": [
-            "Projektstory für LinkedIn entwerfen",
-            "Newsletter-Kopie schreiben",
+            "Projektreport (Vorgehen & Planung) schreiben",
             "Screenshot-Galerie vorbereiten",
+            "LinkedIn/Portfolio-Text kurz ziehen",
         ],
         "In Progress": [
             "Candlestick-Fix testen",
@@ -1022,18 +1022,18 @@ with tab_project:
     stakeholder_df = pd.DataFrame(
         [
             {
-                "Stakeholder": "Mentor / Dozent",
-                "Interesse": "Lernfortschritt, Präsentation",
-                "Einbindung": "Wöchentliche Demo & Feedback",
+                "Stakeholder": "Reviewer (Lehrkraft/Mentor)",
+                "Interesse": "Nachvollziehbares Ergebnis, klare Abnahme",
+                "Einbindung": "Kurze Demo, gezieltes Feedback",
             },
             {
-                "Stakeholder": "Tech-Community",
-                "Interesse": "Best Practices teilen",
-                "Einbindung": "Blog-Post, Discord-Updates",
+                "Stakeholder": "Pilot-User (Familie/Freunde)",
+                "Interesse": "Übersicht & Usability",
+                "Einbindung": "Kurztests, Hinweise zur Verständlichkeit",
             },
             {
-                "Stakeholder": "Recruiter",
-                "Interesse": "Skills & Story",
+                "Stakeholder": "Recruiter/Praktika",
+                "Interesse": "Skills, saubere Story, Ergebnis",
                 "Einbindung": "LinkedIn-Showcase, Portfolio-Link",
             },
         ]
@@ -1043,13 +1043,14 @@ with tab_project:
     st.markdown("### 🧭 RACI Matrix")
     raci_df = pd.DataFrame(
         [
-            {"Aufgabe": "Feature-Implementierung", "R": "Dev", "A": "Projektleitung", "C": "Mentor", "I": "Community"},
-            {"Aufgabe": "Qualitätssicherung", "R": "QA", "A": "Projektleitung", "C": "Dev", "I": "Stakeholder"},
-            {"Aufgabe": "Kommunikation & Updates", "R": "Projektleitung", "A": "Projektleitung", "C": "Mentor", "I": "Recruiter"},
-            {"Aufgabe": "Launch-Story", "R": "Marketing", "A": "Projektleitung", "C": "Dev", "I": "Community"},
+            {"Aufgabe": "Feature-Implementierung", "R": "Du (Dev)", "A": "Du (Product Owner)", "C": "Reviewer", "I": "Pilot-User"},
+            {"Aufgabe": "Qualitätssicherung", "R": "Du", "A": "Du", "C": "Reviewer", "I": "Pilot-User"},
+            {"Aufgabe": "Kommunikation & Updates", "R": "Du", "A": "Du", "C": "Reviewer", "I": "Interessierte"},
+            {"Aufgabe": "Launch-Story", "R": "Du", "A": "Du", "C": "Reviewer", "I": "Recruiter"},
         ]
     )
     st.dataframe(raci_df, hide_index=True, use_container_width=True)
+
 
     st.markdown("### 📨 Newsletter & Updates")
     if "newsletter_signups" not in st.session_state:
