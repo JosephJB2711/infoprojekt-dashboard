@@ -517,6 +517,9 @@ def load_ohlc(symbol: str, period: str) -> pd.DataFrame:
     except Exception:
         return pd.DataFrame()
 
+    if df is not None and not df.empty:
+        df.index = pd.to_datetime(df.index).tz_localize(None)
+
     if df is None or df.empty:
         return pd.DataFrame()
 
