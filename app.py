@@ -494,6 +494,8 @@ def load(symbols, period):
             progress=False,
             group_by="column",
         )
+        if not df.empty:
+            df.index = pd.to_datetime(df.index).tz_localize(None)
         c = extract_close(df)
         if c is not None and not c.empty:
             out[s] = pd.DataFrame({"Close": c})
